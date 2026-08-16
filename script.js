@@ -187,11 +187,9 @@ class EmojiAlchemistGame {
   }
 
   async init() {
-    // Initialize base history state for clean mobile back-button handling
+    // Push baseline history state on initial app load for robust back-button interception
     try {
-      if (!history.state || history.state.modal) {
-        history.replaceState({ modal: null, page: "game" }, "");
-      }
+      history.pushState({ page: "main" }, "");
     } catch (e) {
       console.warn("History API initialization:", e);
     }
@@ -997,8 +995,69 @@ class EmojiAlchemistGame {
     document.querySelectorAll(".hint-pulse").forEach(el => el.classList.remove("hint-pulse"));
   }
 
+  clearActiveToasts() {
+    if (this.toastContainerEl) {
+      this.toastContainerEl.innerHTML = "";
+    }
+    document.querySelectorAll(".toast").forEach((el) => el.remove());
+  }
+
+  attachSwipeToDismiss(toast, dismissTimer) {
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+
+    const onTouchStart = (e) => {
+      if (!e.touches || e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      currentX = startX;
+      isSwiping = true;
+      toast.style.transition = "none";
+    };
+
+    const onTouchMove = (e) => {
+      if (!isSwiping || !e.touches || e.touches.length !== 1) return;
+      currentX = e.touches[0].clientX;
+      const deltaX = currentX - startX;
+      toast.style.transform = `translateX(${deltaX}px)`;
+      const opacity = Math.max(0.1, 1 - Math.abs(deltaX) / 180);
+      toast.style.opacity = `${opacity}`;
+    };
+
+    const onTouchEnd = () => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      const deltaX = currentX - startX;
+
+      if (Math.abs(deltaX) > 80) {
+        // Swiped > 80px: Slide off screen and remove immediately
+        if (dismissTimer) clearTimeout(dismissTimer);
+        const direction = deltaX > 0 ? 1 : -1;
+        toast.style.transition = "transform 0.22s ease-out, opacity 0.22s ease-out";
+        toast.style.transform = `translateX(${direction * 125}%)`;
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 220);
+      } else {
+        // Snap back to original position
+        toast.style.transition = "transform 0.2s ease-out, opacity 0.2s ease-out";
+        toast.style.transform = "translateX(0)";
+        toast.style.opacity = "1";
+      }
+    };
+
+    toast.addEventListener("touchstart", onTouchStart, { passive: true });
+    toast.addEventListener("touchmove", onTouchMove, { passive: true });
+    toast.addEventListener("touchend", onTouchEnd);
+    toast.addEventListener("touchcancel", onTouchEnd);
+  }
+
+  showToast(emoji, title, text, isHint = false, isMilestone = false) {
+    this.showSimpleToast(emoji, title, text, isHint, isMilestone);
+  }
+
   showDiscoveryToast(result, formula) {
     if (!this.toastContainerEl) return;
+    this.clearActiveToasts();
 
     const toast = document.createElement("div");
     toast.className = "toast";
@@ -1050,14 +1109,17 @@ class EmojiAlchemistGame {
 
     this.toastContainerEl.appendChild(toast);
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       toast.classList.add("removing");
       setTimeout(() => toast.remove(), 350);
     }, 4500);
+
+    this.attachSwipeToDismiss(toast, timer);
   }
 
   showSimpleToast(emoji, title, text, isHint = false, isMilestone = false) {
     if (!this.toastContainerEl) return;
+    this.clearActiveToasts();
 
     const toast = document.createElement("div");
     let extraClass = "";
@@ -1075,10 +1137,12 @@ class EmojiAlchemistGame {
 
     this.toastContainerEl.appendChild(toast);
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       toast.classList.add("removing");
       setTimeout(() => toast.remove(), 350);
     }, 4500);
+
+    this.attachSwipeToDismiss(toast, timer);
   }
 
   createSparkleBurst(x, y) {
@@ -1481,11 +1545,6 @@ class EmojiAlchemistGame {
       const offlineMsg = "You are currently offline! Please connect to the internet to send feedback.";
       this.playSound("fail");
       this.showSimpleToast("⚠️", "Offline Mode", offlineMsg);
-      try {
-        alert(offlineMsg);
-      } catch (err) {
-        // Fallback for iframe restrictions
-      }
       return;
     }
 
@@ -1522,17 +1581,11 @@ class EmojiAlchemistGame {
           console.error("Error sending feedback:", err);
           const errorMsg = "Oops! Something went wrong. Please check your connection and try again.";
           this.showSimpleToast("❌", "Delivery Error", errorMsg);
-          try {
-            alert(errorMsg);
-          } catch (e) {}
         });
       } catch (networkErr) {
         console.error("Error sending feedback:", networkErr);
         const errorMsg = "Oops! Something went wrong. Please check your connection and try again.";
         this.showSimpleToast("❌", "Delivery Error", errorMsg);
-        try {
-          alert(errorMsg);
-        } catch (e) {}
       }
     } else {
       console.info("[Feedback] Mock dispatch - replace FEEDBACK_WEB_APP_URL with your live Google Apps Script deployment URL.", payload);
@@ -1567,10 +1620,7 @@ class EmojiAlchemistGame {
     this.playSound("pop");
 
     // Display friendly confirmation message
-    this.showSimpleToast("🚀", "Thanks for your feedback! 🚀", "Your comment has been submitted anonymously.");
-    try {
-      alert("Thanks for your feedback! 🚀");
-    } catch (e) {}
+    this.showSimpleToast("🚀", "Thanks for your feedback!", "Your comment has been submitted anonymously.");
   }
 
   tidyCanvas() {
@@ -1623,36 +1673,59 @@ class EmojiAlchemistGame {
   setupEventListeners() {
     // 1. Mobile Back-Button Integration (History API popstate handler)
     window.addEventListener("popstate", (e) => {
-      // If inventory drawer is open, close it cleanly without leaving the page
+      // Case A: If inventory drawer is open, close it cleanly and re-push state
       if (this.isDrawerExpanded) {
         this.closeMobileDrawer(true);
+        try {
+          history.pushState({ page: "main" }, "");
+        } catch (_) {}
         return;
       }
 
-      // If any modal is open, close it cleanly
+      // Case A: If any modal is open, close it cleanly and re-push state
       if (this.exitModalEl?.classList.contains("open")) {
         this.closeExitModal(true);
+        try {
+          history.pushState({ page: "main" }, "");
+        } catch (_) {}
         return;
       }
       if (this.settingsModalEl?.classList.contains("open")) {
         this.closeSettings(true);
+        try {
+          history.pushState({ page: "main" }, "");
+        } catch (_) {}
         return;
       }
       if (this.grimoireModalEl?.classList.contains("open")) {
         this.closeGrimoire(true);
+        try {
+          history.pushState({ page: "main" }, "");
+        } catch (_) {}
         return;
       }
       if (this.milestonesModalEl?.classList.contains("open")) {
         this.closeMilestones(true);
+        try {
+          history.pushState({ page: "main" }, "");
+        } catch (_) {}
         return;
       }
       if (this.feedbackModalEl?.classList.contains("open")) {
         this.closeFeedbackModal(true);
+        try {
+          history.pushState({ page: "main" }, "");
+        } catch (_) {}
         return;
       }
 
-      // If no modals or drawers are open, trigger the Exit Confirmation Modal
-      this.openExitModal(false);
+      // Case B: If no modals or drawers are open, re-push state and display custom stylized Exit Modal
+      try {
+        history.pushState({ page: "main" }, "");
+      } catch (err) {
+        console.warn("History pushState error:", err);
+      }
+      this.openExitModal(true);
     });
 
     // 2. Mobile Drawer Toggle Handle & Tap Outside to Close
