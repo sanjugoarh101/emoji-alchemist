@@ -260,9 +260,11 @@ class EmojiAlchemistGame {
       this.updateNetworkStatusUI();
       this.showSimpleToast("🌐", "Back Online", "Internet reconnected. Checking for new elements...");
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.update().catch((err) => console.warn("[PWA] Silent update check error:", err));
-        });
+        navigator.serviceWorker.ready
+          .then((reg) => {
+            reg.update().catch((err) => console.warn("[PWA] Silent update check error:", err));
+          })
+          .catch((err) => console.warn("[PWA] ServiceWorker ready error:", err));
       }
     });
 
@@ -1182,7 +1184,9 @@ class EmojiAlchemistGame {
       }
     }
     if (this.audioCtx && this.audioCtx.state === "suspended") {
-      this.audioCtx.resume();
+      this.audioCtx.resume().catch((err) => {
+        console.debug("AudioContext resume waiting for user gesture:", err);
+      });
     }
   }
 
@@ -1307,7 +1311,7 @@ class EmojiAlchemistGame {
     }
   }
 
-  openGrimoire() {
+  openGrimoire(fromPopState = false) {
     if (!this.grimoireModalEl || !this.recipeListEl) return;
     this.recipeListEl.innerHTML = "";
 
@@ -1531,14 +1535,29 @@ class EmojiAlchemistGame {
       e.preventDefault();
     }
 
-    const typeInput = this.feedbackFormEl ? this.feedbackFormEl.querySelector("input[name='feedback_type']:checked") : null;
-    const messageInput = document.getElementById("feedback-message");
+    // Read the text value from the active category selector button or radio pill
+    const activeCategoryEl = this.feedbackFormEl ? (
+      this.feedbackFormEl.querySelector(".category-btn.active, .category-pill.active, button.active") ||
+      this.feedbackFormEl.querySelector("input[name='feedback_type']:checked")
+    ) : null;
 
-    const type = typeInput ? typeInput.value : "💡 Idea";
-    const text = messageInput ? messageInput.value.trim() : (typeof e === "string" ? e.trim() : "");
+    let selectedCategory = "💡 Idea / Feature";
+    if (activeCategoryEl) {
+      if (activeCategoryEl.value) {
+        selectedCategory = activeCategoryEl.value;
+      } else if (activeCategoryEl.textContent) {
+        selectedCategory = activeCategoryEl.textContent.trim();
+      } else if (activeCategoryEl.parentElement && activeCategoryEl.parentElement.textContent) {
+        selectedCategory = activeCategoryEl.parentElement.textContent.trim();
+      }
+    }
+
+    // Read feedback text from textarea
+    const feedbackTextarea = document.getElementById("feedback-message");
+    const feedbackText = feedbackTextarea ? feedbackTextarea.value.trim() : (typeof e === "string" ? e.trim() : "");
 
     // Check that feedback isn't empty
-    if (!text) return;
+    if (!feedbackText) return;
 
     // 1. Check if the user is offline
     if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -1551,16 +1570,6 @@ class EmojiAlchemistGame {
     const progressString = `${this.unlockedInventory.size}/${this.totalPossibleDiscoveries}`;
     const timestampStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    const payload = {
-      feedback: text,
-      text: text,
-      message: text,
-      category: type,
-      progress: progressString,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent || "Unknown"
-    };
-
     const targetUrl = typeof FEEDBACK_WEB_APP_URL !== "undefined" ? FEEDBACK_WEB_APP_URL : "";
 
     // 2. Send the feedback if online
@@ -1572,10 +1581,10 @@ class EmojiAlchemistGame {
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ category: selectedCategory, feedback: feedbackText })
         })
         .then(() => {
-          this.handleFeedbackSuccess(text, type, progressString, timestampStr, messageInput);
+          this.handleFeedbackSuccess(feedbackText, selectedCategory, progressString, timestampStr, feedbackTextarea);
         })
         .catch(err => {
           console.error("Error sending feedback:", err);
@@ -1588,8 +1597,8 @@ class EmojiAlchemistGame {
         this.showSimpleToast("❌", "Delivery Error", errorMsg);
       }
     } else {
-      console.info("[Feedback] Mock dispatch - replace FEEDBACK_WEB_APP_URL with your live Google Apps Script deployment URL.", payload);
-      this.handleFeedbackSuccess(text, type, progressString, timestampStr, messageInput);
+      console.info("[Feedback] Mock dispatch - replace FEEDBACK_WEB_APP_URL with your live Google Apps Script deployment URL.", { category: selectedCategory, feedback: feedbackText });
+      this.handleFeedbackSuccess(feedbackText, selectedCategory, progressString, timestampStr, feedbackTextarea);
     }
   }
 
