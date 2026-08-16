@@ -8,9 +8,12 @@
  * - Strict Zero-Scroll Viewport Lockdown & Anti-Frustration Mobile UX
  * - Completionist Mastery Tiers & Milestone celebration system
  * - Psychological Engagement micro-copy & speed grind challenges
- * - In-App Player Feedback & Bug Reporting system with local logging
+ * - Anonymous In-App Player Feedback streaming to Google Sheet webhook
  * - Procedural Web Audio API sound synthesizer
  */
+
+// Google Apps Script / Webhook Endpoint for Anonymous Player Feedback
+const FEEDBACK_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw7LnqgziY533U9Qtp5h4w6p7Zcb0kNQk9BX82dX44a-P9dJcABcO-KCtcPHlnVkXyt/exec";
 
 const DEFAULT_BASE_ELEMENTS = [
   { id: "fire", emoji: "🔥", name: "Fire", category: "Elements" },
@@ -1123,39 +1126,115 @@ class EmojiAlchemistGame {
     }
   }
 
-  submitFeedback(e) {
-    e.preventDefault();
-    const typeInput = this.feedbackFormEl.querySelector("input[name='feedback_type']:checked");
+  async submitFeedback(e) {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    const typeInput = this.feedbackFormEl ? this.feedbackFormEl.querySelector("input[name='feedback_type']:checked") : null;
     const messageInput = document.getElementById("feedback-message");
-    const contactInput = document.getElementById("feedback-contact");
 
     const type = typeInput ? typeInput.value : "💡 Idea";
-    const message = messageInput ? messageInput.value.trim() : "";
-    const contact = contactInput ? contactInput.value.trim() : "";
+    const text = messageInput ? messageInput.value.trim() : (typeof e === "string" ? e.trim() : "");
 
-    if (!message) return;
+    // Check that feedback isn't empty
+    if (!text) return;
 
-    const newFeedback = {
+    // 1. Check if the user is offline
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const offlineMsg = "You are currently offline! Please connect to the internet to send feedback.";
+      this.playSound("fail");
+      this.showSimpleToast("⚠️", "Offline Mode", offlineMsg);
+      try {
+        alert(offlineMsg);
+      } catch (err) {
+        // Fallback for iframe restrictions
+      }
+      return;
+    }
+
+    const progressString = `${this.unlockedInventory.size}/${this.totalPossibleDiscoveries}`;
+    const timestampStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const payload = {
+      feedback: text,
+      text: text,
+      message: text,
+      category: type,
+      progress: progressString,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent || "Unknown"
+    };
+
+    const targetUrl = typeof FEEDBACK_WEB_APP_URL !== "undefined" ? FEEDBACK_WEB_APP_URL : "";
+
+    // 2. Send the feedback if online
+    if (targetUrl && targetUrl !== "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+      try {
+        await fetch(targetUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(() => {
+          this.handleFeedbackSuccess(text, type, progressString, timestampStr, messageInput);
+        })
+        .catch(err => {
+          console.error("Error sending feedback:", err);
+          const errorMsg = "Oops! Something went wrong. Please check your connection and try again.";
+          this.showSimpleToast("❌", "Delivery Error", errorMsg);
+          try {
+            alert(errorMsg);
+          } catch (e) {}
+        });
+      } catch (networkErr) {
+        console.error("Error sending feedback:", networkErr);
+        const errorMsg = "Oops! Something went wrong. Please check your connection and try again.";
+        this.showSimpleToast("❌", "Delivery Error", errorMsg);
+        try {
+          alert(errorMsg);
+        } catch (e) {}
+      }
+    } else {
+      console.info("[Feedback] Mock dispatch - replace FEEDBACK_WEB_APP_URL with your live Google Apps Script deployment URL.", payload);
+      this.handleFeedbackSuccess(text, type, progressString, timestampStr, messageInput);
+    }
+  }
+
+  handleFeedbackSuccess(text, type, progressString, timestampStr, messageInput) {
+    // Save locally to display under Recent Submissions
+    const localEntry = {
       id: Date.now(),
       type,
-      message,
-      contact,
-      progress: `${this.unlockedInventory.size}/${this.totalPossibleDiscoveries}`,
-      timestamp: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      message: text,
+      progress: progressString,
+      timestamp: timestampStr
     };
 
     try {
       const history = JSON.parse(localStorage.getItem("emoji_alchemist_feedback_history") || "[]");
-      history.unshift(newFeedback);
+      history.unshift(localEntry);
       localStorage.setItem("emoji_alchemist_feedback_history", JSON.stringify(history.slice(0, 20)));
     } catch (err) {
-      console.warn("Error saving feedback:", err);
+      console.warn("[Feedback] Error saving local entry:", err);
     }
 
+    // Clear input box and reset form
+    if (messageInput) messageInput.value = "";
+    if (this.feedbackFormEl) this.feedbackFormEl.reset();
+
+    // Close modal and play sound
     this.closeFeedbackModal();
-    this.feedbackFormEl.reset();
     this.playSound("pop");
-    this.showSimpleToast("🚀", "Feedback Dispatched!", "Thank you for helping refine Emoji Alchemist!");
+
+    // Display friendly confirmation message
+    this.showSimpleToast("🚀", "Thanks for your feedback! 🚀", "Your comment has been submitted anonymously.");
+    try {
+      alert("Thanks for your feedback! 🚀");
+    } catch (e) {}
   }
 
   tidyCanvas() {
