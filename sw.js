@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emoji-alchemist-v2';
+const CACHE_NAME = 'emoji-alchemist-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -8,7 +8,7 @@ const ASSETS_TO_CACHE = [
   '/manifest.json'
 ];
 
-// Install Event - Pre-cache core assets
+// Install Event - Pre-cache core assets & skip waiting for instant activation
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Event - Clean up previous cache versions
+// Activate Event - Clean up previous cache versions & claim all clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
@@ -32,6 +32,13 @@ self.addEventListener('activate', (event) => {
       );
     }).then(() => self.clients.claim())
   );
+});
+
+// Message Event - Support explicit skipWaiting requests
+self.addEventListener('message', (event) => {
+  if (event.data && (event.data.type === 'SKIP_WAITING' || event.data.action === 'skipWaiting')) {
+    self.skipWaiting();
+  }
 });
 
 // Fetch Event - Stale-While-Revalidate with Cache Fallback for 100% Offline Gameplay

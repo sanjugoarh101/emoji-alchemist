@@ -39,7 +39,7 @@
       <!-- App Header -->
       <header id="app-header">
         <div class="brand-section">
-          <span class="brand-logo" aria-hidden="true">⚗️</span>
+          <span class="brand-logo app-logo" aria-label="Emoji Alchemist Flask Logo" role="img">⚗️</span>
           <div class="brand-titles">
             <h1>Emoji Alchemist</h1>
             <span class="brand-subtitle" id="tier-rank-subtitle">🌱 Apprentice (4/68)</span>
@@ -85,10 +85,29 @@
         </div>
       </header>
 
+      <!-- Backdrop overlay for mobile inventory drawer when expanded -->
+      <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+
       <!-- Main Layout Container (Zero-Scroll Strict Viewport Fit) -->
       <main id="app-layout">
-        <!-- Sidebar (Desktop: Left Drawer | Mobile: Pinned Bottom Dock) -->
-        <aside id="sidebar">
+        <!-- Sidebar (Desktop: Left Sidebar | Mobile: Expandable Bottom Grid Drawer) -->
+        <aside id="sidebar" class="sidebar-drawer">
+          <!-- Mobile Drawer Handle & Toggle Bar (▲ / ▼) -->
+          <div id="drawer-handle-bar" class="drawer-handle-bar" role="button" tabindex="0" aria-label="Toggle Inventory Drawer" title="Tap to expand inventory grid">
+            <div class="drawer-handle-pill"></div>
+            <div class="drawer-handle-info">
+              <div class="drawer-handle-left">
+                <span class="drawer-handle-icon">🎒</span>
+                <span class="drawer-handle-label">Inventory Grid</span>
+                <span id="drawer-item-count" class="drawer-item-count">4 items</span>
+              </div>
+              <div class="drawer-handle-right">
+                <span id="drawer-handle-hint" class="drawer-handle-hint">Tap to expand</span>
+                <span id="drawer-toggle-icon" class="drawer-toggle-icon" aria-hidden="true">▲</span>
+              </div>
+            </div>
+          </div>
+
           <div class="sidebar-header">
             <div class="sidebar-title-row">
               <h2 class="sidebar-title">
@@ -118,7 +137,7 @@
             </div>
           </div>
 
-          <!-- Scrollable Inventory Grid / Mobile Horizontal Dock -->
+          <!-- Multi-column Grid Inventory List (Desktop: Scrollable Column/Grid | Mobile: Multi-Column Expandable Grid Overlay) -->
           <div id="inventory-list" class="inventory-scroll">
             <!-- Dynamically populated by script.js -->
           </div>

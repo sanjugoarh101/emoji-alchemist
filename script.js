@@ -114,6 +114,14 @@ class EmojiAlchemistGame {
     // DOM Elements
     this.inventoryListEl = document.getElementById("inventory-list");
     this.inventoryBadgeEl = document.getElementById("inventory-badge");
+    this.sidebarEl = document.getElementById("sidebar");
+    this.drawerHandleBarEl = document.getElementById("drawer-handle-bar");
+    this.drawerToggleIconEl = document.getElementById("drawer-toggle-icon");
+    this.drawerHandleHintEl = document.getElementById("drawer-handle-hint");
+    this.drawerBackdropEl = document.getElementById("drawer-backdrop");
+    this.drawerItemCountEl = document.getElementById("drawer-item-count");
+    this.isDrawerExpanded = false;
+
     this.searchInputEl = document.getElementById("search-input");
     this.clearSearchBtn = document.getElementById("clear-search-btn");
     this.canvasEl = document.getElementById("crafting-canvas");
@@ -170,14 +178,36 @@ class EmojiAlchemistGame {
   }
 
   /**
-   * PWA Service Worker & Install Prompt Setup
+   * PWA Service Worker & Install Prompt Setup with Seamless Auto-Update
    */
   setupPWAAndOffline() {
-    // 1. Register Service Worker for 100% offline gameplay
+    // 1. Register Service Worker & Listen for Controller Change for Seamless Auto-Update
     if ("serviceWorker" in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!refreshing) {
+          refreshing = true;
+          console.log("[PWA] Controller changed, auto-refreshing for seamless update...");
+          window.location.reload();
+        }
+      });
+
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js")
-          .then((reg) => console.log("[PWA] Service Worker registered successfully:", reg.scope))
+          .then((reg) => {
+            console.log("[PWA] Service Worker registered successfully:", reg.scope);
+            reg.addEventListener("updatefound", () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener("statechange", () => {
+                  if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                    console.log("[PWA] New service worker ready, dispatching skipWaiting...");
+                    newWorker.postMessage({ type: "SKIP_WAITING" });
+                  }
+                });
+              }
+            });
+          })
           .catch((err) => console.warn("[PWA] Service Worker registration failed:", err));
       });
     }
@@ -307,6 +337,32 @@ class EmojiAlchemistGame {
     return MASTERY_TIERS[0];
   }
 
+  toggleMobileDrawer(forceState = null) {
+    if (!this.sidebarEl) return;
+    const shouldExpand = forceState !== null ? forceState : !this.isDrawerExpanded;
+    this.isDrawerExpanded = shouldExpand;
+
+    if (shouldExpand) {
+      this.sidebarEl.classList.add("expanded");
+      if (this.drawerBackdropEl) this.drawerBackdropEl.classList.add("active");
+      if (this.drawerToggleIconEl) this.drawerToggleIconEl.textContent = "▼";
+      if (this.drawerHandleHintEl) this.drawerHandleHintEl.textContent = "Tap to collapse";
+      if (this.drawerHandleBarEl) this.drawerHandleBarEl.title = "Tap to collapse inventory grid";
+    } else {
+      this.sidebarEl.classList.remove("expanded");
+      if (this.drawerBackdropEl) this.drawerBackdropEl.classList.remove("active");
+      if (this.drawerToggleIconEl) this.drawerToggleIconEl.textContent = "▲";
+      if (this.drawerHandleHintEl) this.drawerHandleHintEl.textContent = "Tap to expand";
+      if (this.drawerHandleBarEl) this.drawerHandleBarEl.title = "Tap to expand inventory grid";
+    }
+  }
+
+  closeMobileDrawer() {
+    if (this.isDrawerExpanded) {
+      this.toggleMobileDrawer(false);
+    }
+  }
+
   renderInventory() {
     if (!this.inventoryListEl) return;
     this.inventoryListEl.innerHTML = "";
@@ -321,6 +377,9 @@ class EmojiAlchemistGame {
 
     if (this.inventoryBadgeEl) {
       this.inventoryBadgeEl.textContent = `${items.length} items`;
+    }
+    if (this.drawerItemCountEl) {
+      this.drawerItemCountEl.textContent = `${items.length} items`;
     }
 
     if (filtered.length === 0) {
@@ -358,6 +417,7 @@ class EmojiAlchemistGame {
     const total = this.totalPossibleDiscoveries || 68;
     if (this.discoveredCountEl) this.discoveredCountEl.textContent = current;
     if (this.totalCountEl) this.totalCountEl.textContent = total;
+    if (this.drawerItemCountEl) this.drawerItemCountEl.textContent = `${current} items`;
 
     if (this.progressBarEl) {
       const percent = Math.min(100, Math.round((current / total) * 100));
@@ -1285,6 +1345,30 @@ class EmojiAlchemistGame {
   }
 
   setupEventListeners() {
+    // Mobile Drawer Toggle Handle & Backdrop
+    if (this.drawerHandleBarEl) {
+      this.drawerHandleBarEl.addEventListener("click", () => this.toggleMobileDrawer());
+      this.drawerHandleBarEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this.toggleMobileDrawer();
+        }
+      });
+    }
+
+    if (this.drawerBackdropEl) {
+      this.drawerBackdropEl.addEventListener("click", () => this.closeMobileDrawer());
+    }
+
+    // Auto-close mobile drawer when tapping on the canvas
+    if (this.canvasContainerEl) {
+      this.canvasContainerEl.addEventListener("pointerdown", () => {
+        if (this.isDrawerExpanded && window.innerWidth <= 768) {
+          this.closeMobileDrawer();
+        }
+      });
+    }
+
     // Search input
     if (this.searchInputEl) {
       this.searchInputEl.addEventListener("input", () => this.renderInventory());
