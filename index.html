@@ -39,7 +39,9 @@
       <!-- App Header -->
       <header id="app-header">
         <div class="brand-section">
-          <span class="brand-logo app-logo" aria-label="Emoji Alchemist Flask Logo" role="img">⚗️</span>
+          <div class="brand-logo-badge app-logo" aria-label="Emoji Alchemist Logo" role="img">
+            <span class="brand-badge-emoji">🔮</span>
+          </div>
           <div class="brand-titles">
             <h1>Emoji Alchemist</h1>
             <span class="brand-subtitle" id="tier-rank-subtitle">🌱 Apprentice (4/68)</span>
@@ -286,6 +288,34 @@
           <div id="feedback-history-section" class="feedback-history-section">
             <h4 class="history-title">Recent Submissions</h4>
             <div id="feedback-history-list" class="feedback-history-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Exit Confirmation Modal -->
+    <div id="modal-exit" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="exit-modal-title">
+      <div class="modal-card exit-modal-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-icon">🚪</span>
+            <h3 id="exit-modal-title" class="modal-title">Leave Emoji Alchemist?</h3>
+          </div>
+          <button id="btn-close-exit-modal" class="btn-icon-close" title="Close" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body exit-modal-body">
+          <div class="exit-modal-content">
+            <div class="exit-modal-art">🔮</div>
+            <p class="exit-modal-text">Your progress is saved automatically!</p>
+            <p class="exit-modal-subtext">All discovered recipes, inventory progress, and mastery ranks are securely saved.</p>
+          </div>
+          <div class="exit-modal-actions">
+            <button type="button" id="btn-keep-playing" class="btn btn-primary btn-keep-playing">
+              <span>✨ Keep Playing</span>
+            </button>
+            <button type="button" id="btn-confirm-exit" class="btn btn-exit-app">
+              <span>🚪 Exit</span>
+            </button>
           </div>
         </div>
       </div>

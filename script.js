@@ -142,6 +142,10 @@ class EmojiAlchemistGame {
     this.feedbackFormEl = document.getElementById("feedback-form");
     this.feedbackHistoryListEl = document.getElementById("feedback-history-list");
     this.feedbackStatSummaryEl = document.getElementById("feedback-stat-summary");
+    this.exitModalEl = document.getElementById("modal-exit");
+    this.btnKeepPlaying = document.getElementById("btn-keep-playing");
+    this.btnConfirmExit = document.getElementById("btn-confirm-exit");
+    this.btnCloseExitModal = document.getElementById("btn-close-exit-modal");
 
     // Banner & Controls
     this.engagementBannerEl = document.getElementById("pwa-engagement-banner");
@@ -165,6 +169,15 @@ class EmojiAlchemistGame {
   }
 
   async init() {
+    // Initialize base history state for clean mobile back-button handling
+    try {
+      if (!history.state || history.state.modal) {
+        history.replaceState({ modal: null, page: "game" }, "");
+      }
+    } catch (e) {
+      console.warn("History API initialization:", e);
+    }
+
     this.setupPWAAndOffline();
     await this.loadRecipeData();
     this.loadSavedProgress();
@@ -337,9 +350,10 @@ class EmojiAlchemistGame {
     return MASTERY_TIERS[0];
   }
 
-  toggleMobileDrawer(forceState = null) {
+  toggleMobileDrawer(forceState = null, fromPopState = false) {
     if (!this.sidebarEl) return;
     const shouldExpand = forceState !== null ? forceState : !this.isDrawerExpanded;
+    if (shouldExpand === this.isDrawerExpanded) return;
     this.isDrawerExpanded = shouldExpand;
 
     if (shouldExpand) {
@@ -348,18 +362,34 @@ class EmojiAlchemistGame {
       if (this.drawerToggleIconEl) this.drawerToggleIconEl.textContent = "▼";
       if (this.drawerHandleHintEl) this.drawerHandleHintEl.textContent = "Tap to collapse";
       if (this.drawerHandleBarEl) this.drawerHandleBarEl.title = "Tap to collapse inventory grid";
+
+      if (!fromPopState) {
+        try {
+          history.pushState({ modal: "inventory" }, "");
+        } catch (e) {
+          console.warn("History pushState error:", e);
+        }
+      }
     } else {
       this.sidebarEl.classList.remove("expanded");
       if (this.drawerBackdropEl) this.drawerBackdropEl.classList.remove("active");
       if (this.drawerToggleIconEl) this.drawerToggleIconEl.textContent = "▲";
       if (this.drawerHandleHintEl) this.drawerHandleHintEl.textContent = "Tap to expand";
       if (this.drawerHandleBarEl) this.drawerHandleBarEl.title = "Tap to expand inventory grid";
+
+      if (!fromPopState && history.state?.modal === "inventory") {
+        try {
+          history.back();
+        } catch (e) {
+          console.warn("History back error:", e);
+        }
+      }
     }
   }
 
-  closeMobileDrawer() {
+  closeMobileDrawer(fromPopState = false) {
     if (this.isDrawerExpanded) {
-      this.toggleMobileDrawer(false);
+      this.toggleMobileDrawer(false, fromPopState);
     }
   }
 
@@ -1092,10 +1122,24 @@ class EmojiAlchemistGame {
     });
 
     this.grimoireModalEl.classList.add("open");
+    if (!fromPopState) {
+      try {
+        history.pushState({ modal: "grimoire" }, "");
+      } catch (e) {
+        console.warn("History pushState error:", e);
+      }
+    }
   }
 
-  closeGrimoire() {
+  closeGrimoire(fromPopState = false) {
     if (this.grimoireModalEl) this.grimoireModalEl.classList.remove("open");
+    if (!fromPopState && history.state?.modal === "grimoire") {
+      try {
+        history.back();
+      } catch (e) {
+        console.warn("History back error:", e);
+      }
+    }
   }
 
   /**
@@ -1132,26 +1176,94 @@ class EmojiAlchemistGame {
     });
   }
 
-  openMilestones() {
+  openMilestones(fromPopState = false) {
     this.renderMasteryTiers();
     if (this.milestonesModalEl) this.milestonesModalEl.classList.add("open");
+    if (!fromPopState) {
+      try {
+        history.pushState({ modal: "milestones" }, "");
+      } catch (e) {
+        console.warn("History pushState error:", e);
+      }
+    }
   }
 
-  closeMilestones() {
+  closeMilestones(fromPopState = false) {
     if (this.milestonesModalEl) this.milestonesModalEl.classList.remove("open");
+    if (!fromPopState && history.state?.modal === "milestones") {
+      try {
+        history.back();
+      } catch (e) {
+        console.warn("History back error:", e);
+      }
+    }
   }
 
   /**
    * Feedback & Bug Reporting System
    */
-  openFeedbackModal() {
+  openFeedbackModal(fromPopState = false) {
     if (!this.feedbackModalEl) return;
     this.renderFeedbackHistory();
     this.feedbackModalEl.classList.add("open");
+    if (!fromPopState) {
+      try {
+        history.pushState({ modal: "feedback" }, "");
+      } catch (e) {
+        console.warn("History pushState error:", e);
+      }
+    }
   }
 
-  closeFeedbackModal() {
+  closeFeedbackModal(fromPopState = false) {
     if (this.feedbackModalEl) this.feedbackModalEl.classList.remove("open");
+    if (!fromPopState && history.state?.modal === "feedback") {
+      try {
+        history.back();
+      } catch (e) {
+        console.warn("History back error:", e);
+      }
+    }
+  }
+
+  /**
+   * Exit Confirmation Modal
+   */
+  openExitModal(fromPopState = false) {
+    if (this.exitModalEl) {
+      this.exitModalEl.classList.add("open");
+      this.playSound("pop");
+    }
+    if (!fromPopState) {
+      try {
+        history.pushState({ modal: "exit" }, "");
+      } catch (e) {
+        console.warn("History pushState error:", e);
+      }
+    }
+  }
+
+  closeExitModal(fromPopState = false) {
+    if (this.exitModalEl) this.exitModalEl.classList.remove("open");
+    if (!fromPopState && history.state?.modal === "exit") {
+      try {
+        history.back();
+      } catch (e) {
+        console.warn("History back error:", e);
+      }
+    }
+  }
+
+  handleConfirmExit() {
+    this.playSound("pop");
+    try {
+      window.close();
+    } catch (e) {
+      console.warn("window.close() restricted:", e);
+    }
+    setTimeout(() => {
+      window.location.href = "about:blank";
+    }, 120);
   }
 
   renderFeedbackHistory() {
@@ -1345,7 +1457,37 @@ class EmojiAlchemistGame {
   }
 
   setupEventListeners() {
-    // Mobile Drawer Toggle Handle & Backdrop
+    // 1. Mobile Back-Button Integration (History API popstate handler)
+    window.addEventListener("popstate", (e) => {
+      // If inventory drawer is open, close it cleanly without leaving the page
+      if (this.isDrawerExpanded) {
+        this.closeMobileDrawer(true);
+        return;
+      }
+
+      // If any modal is open, close it cleanly
+      if (this.exitModalEl?.classList.contains("open")) {
+        this.closeExitModal(true);
+        return;
+      }
+      if (this.grimoireModalEl?.classList.contains("open")) {
+        this.closeGrimoire(true);
+        return;
+      }
+      if (this.milestonesModalEl?.classList.contains("open")) {
+        this.closeMilestones(true);
+        return;
+      }
+      if (this.feedbackModalEl?.classList.contains("open")) {
+        this.closeFeedbackModal(true);
+        return;
+      }
+
+      // If no modals or drawers are open, trigger the Exit Confirmation Modal
+      this.openExitModal(false);
+    });
+
+    // 2. Mobile Drawer Toggle Handle & Tap Outside to Close
     if (this.drawerHandleBarEl) {
       this.drawerHandleBarEl.addEventListener("click", () => this.toggleMobileDrawer());
       this.drawerHandleBarEl.addEventListener("keydown", (e) => {
@@ -1356,18 +1498,43 @@ class EmojiAlchemistGame {
       });
     }
 
+    // Tap outside to close: Dark overlay backdrop
     if (this.drawerBackdropEl) {
       this.drawerBackdropEl.addEventListener("click", () => this.closeMobileDrawer());
+      this.drawerBackdropEl.addEventListener("pointerdown", () => this.closeMobileDrawer());
     }
 
-    // Auto-close mobile drawer when tapping on the canvas
+    // Tap outside to close: Auto-close mobile drawer when tapping on workspace/canvas
     if (this.canvasContainerEl) {
-      this.canvasContainerEl.addEventListener("pointerdown", () => {
+      this.canvasContainerEl.addEventListener("pointerdown", (e) => {
+        if (this.isDrawerExpanded && window.innerWidth <= 768) {
+          // If not interacting with the drawer itself
+          const sidebar = document.getElementById("sidebar");
+          if (!sidebar || !sidebar.contains(e.target)) {
+            this.closeMobileDrawer();
+          }
+        }
+      });
+    }
+
+    if (this.canvasEl) {
+      this.canvasEl.addEventListener("pointerdown", (e) => {
         if (this.isDrawerExpanded && window.innerWidth <= 768) {
           this.closeMobileDrawer();
         }
       });
     }
+
+    // Global tap outside drawer fallback
+    document.addEventListener("pointerdown", (e) => {
+      if (this.isDrawerExpanded && window.innerWidth <= 768) {
+        const sidebar = document.getElementById("sidebar");
+        const backdrop = document.getElementById("drawer-backdrop");
+        if (sidebar && !sidebar.contains(e.target) && backdrop && !backdrop.contains(e.target)) {
+          this.closeMobileDrawer();
+        }
+      }
+    });
 
     // Search input
     if (this.searchInputEl) {
@@ -1440,6 +1607,25 @@ class EmojiAlchemistGame {
 
     if (this.feedbackFormEl) {
       this.feedbackFormEl.addEventListener("submit", (e) => this.submitFeedback(e));
+    }
+
+    // Exit Confirmation Modal Event Listeners
+    if (this.btnKeepPlaying) {
+      this.btnKeepPlaying.addEventListener("click", () => this.closeExitModal());
+    }
+
+    if (this.btnCloseExitModal) {
+      this.btnCloseExitModal.addEventListener("click", () => this.closeExitModal());
+    }
+
+    if (this.btnConfirmExit) {
+      this.btnConfirmExit.addEventListener("click", () => this.handleConfirmExit());
+    }
+
+    if (this.exitModalEl) {
+      this.exitModalEl.addEventListener("click", (e) => {
+        if (e.target === this.exitModalEl) this.closeExitModal();
+      });
     }
 
     // Reset Progress
