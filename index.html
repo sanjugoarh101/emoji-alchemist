@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Emoji Alchemist - PWA Crafting Game</title>
+    <meta name="description" content="Drag, drop, and combine emoji elements to discover 68+ alchemical creations offline." />
+    
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#161b22" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Emoji Alchemist" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23161b22'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-size='280'%3E%E2%9A%97%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div id="app-root">
+      <!-- Optional Psychological Engagement Banner (Offline Ready + Speed Grind Challenge) -->
+      <div id="pwa-engagement-banner" class="engagement-banner" role="banner">
+        <div class="banner-content">
+          <span class="banner-badge">⚡ 100% Offline Ready</span>
+          <p class="banner-text">
+            <strong>Grind your brain:</strong> Play offline & conquer all discoveries before the next version update!
+          </p>
+        </div>
+        <div class="banner-actions">
+          <button id="btn-install-pwa" class="btn btn-banner-action" title="Install or Add to Home Screen">
+            <span>📲</span>
+            <span class="btn-text">Install App</span>
+          </button>
+          <button id="btn-dismiss-banner" class="btn-icon-close" title="Dismiss Banner" aria-label="Dismiss">✕</button>
+        </div>
+      </div>
+
+      <!-- App Header -->
+      <header id="app-header">
+        <div class="brand-section">
+          <span class="brand-logo" aria-hidden="true">⚗️</span>
+          <div class="brand-titles">
+            <h1>Emoji Alchemist</h1>
+            <span class="brand-subtitle" id="tier-rank-subtitle">🌱 Apprentice (4/68)</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- Tier Milestone Pill -->
+          <button id="btn-milestones" class="stats-badge tier-pill" title="View Mastery Tier Milestones">
+            <span id="tier-badge-icon">🌱</span>
+            <span class="counter-highlight">
+              <span id="discovered-count">4</span> / <span id="total-count">68</span>
+            </span>
+          </button>
+
+          <!-- Hint Button -->
+          <button id="btn-hint" class="btn btn-hint" title="Get a hint for a new combination">
+            <span>💡</span>
+            <span class="btn-text">Hint</span>
+          </button>
+
+          <!-- Recipe Grimoire Button -->
+          <button id="btn-open-grimoire" class="btn" title="View Discovered Recipes">
+            <span>📖</span>
+            <span class="btn-text">Grimoire</span>
+          </button>
+
+          <!-- Feedback & Bug Report Button -->
+          <button id="btn-open-feedback" class="btn btn-feedback" title="Feedback & Bug Reports">
+            <span>💬</span>
+            <span class="btn-text">Feedback</span>
+          </button>
+
+          <!-- Sound FX Toggle -->
+          <button id="btn-toggle-audio" class="btn btn-icon" title="Toggle Sound FX" aria-label="Toggle Sound Effects">
+            🔊
+          </button>
+
+          <!-- Reset All Progress Button -->
+          <button id="btn-reset-game" class="btn btn-icon btn-danger-hover" title="Reset All Progress" aria-label="Reset Game Progress">
+            🔄
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Layout Container (Zero-Scroll Strict Viewport Fit) -->
+      <main id="app-layout">
+        <!-- Sidebar (Desktop: Left Drawer | Mobile: Pinned Bottom Dock) -->
+        <aside id="sidebar">
+          <div class="sidebar-header">
+            <div class="sidebar-title-row">
+              <h2 class="sidebar-title">
+                <span>🎒</span>
+                <span>Inventory</span>
+              </h2>
+              <span id="inventory-badge" class="inventory-badge">4 items</span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container" title="Alchemy Discovery Progress">
+              <div id="progress-bar" class="progress-fill"></div>
+            </div>
+
+            <!-- Search Filter -->
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input 
+                type="text" 
+                id="search-input" 
+                class="search-input" 
+                placeholder="Search elements..." 
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button id="clear-search-btn" class="clear-search-btn" title="Clear search">✕</button>
+            </div>
+          </div>
+
+          <!-- Scrollable Inventory Grid / Mobile Horizontal Dock -->
+          <div id="inventory-list" class="inventory-scroll">
+            <!-- Dynamically populated by script.js -->
+          </div>
+        </aside>
+
+        <!-- Canvas: Interactive Crafting Area -->
+        <section id="canvas-container">
+          <!-- Canvas Floating Action Toolbar -->
+          <div class="canvas-toolbar">
+            <button id="btn-hint-canvas" class="btn btn-hint-mobile" title="Get a hint">
+              <span>💡</span>
+              <span>Hint</span>
+            </button>
+            <button id="btn-tidy-canvas" class="btn" title="Arrange elements in a clean grid">
+              <span>✨</span>
+              <span>Tidy</span>
+            </button>
+            <button id="btn-clear-canvas" class="btn btn-danger-hover" title="Clear Canvas Area">
+              <span>🗑️</span>
+              <span>Clear</span>
+            </button>
+          </div>
+
+          <!-- Helpful Canvas Hint Pill -->
+          <div class="canvas-hint-pill" id="canvas-hint-pill">
+            <span>💡</span>
+            <span>Drag elements onto each other to combine • Tap item to spawn</span>
+          </div>
+
+          <!-- Interactive Crafting Canvas Area -->
+          <div id="crafting-canvas"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Discovery Notification Toasts Container -->
+    <div id="toast-container" aria-live="polite"></div>
+
+    <!-- Tier Milestone & Mastery Modal -->
+    <div id="milestones-modal" class="modal-backdrop">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span>🏆</span>
+            <span>Alchemical Mastery Tiers</span>
+          </h3>
+          <button id="btn-close-milestones" class="btn btn-icon" title="Close" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="grimoire-desc">
+            Push your mind to the limit! Unlock rare tiers and master the transmutation matrix before the next major expansion.
+          </p>
+          <div id="tiers-list" class="tiers-list">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grimoire / Recipe Book Modal -->
+    <div id="grimoire-modal" class="modal-backdrop">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span>📖</span>
+            <span>Alchemist's Grimoire</span>
+          </h3>
+          <button id="btn-close-grimoire" class="btn btn-icon" title="Close Grimoire" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="grimoire-desc">
+            Alchemical formulas you have uncovered. Combine elements on the canvas to decipher unknown recipes!
+          </p>
+          <div id="recipe-list" class="recipe-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feedback / Bug Report Modal -->
+    <div id="feedback-modal" class="modal-backdrop">
+      <div class="modal-window feedback-window">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span>💬</span>
+            <span>Player Feedback & Bug Report</span>
+          </h3>
+          <button id="btn-close-feedback" class="btn btn-icon" title="Close Feedback" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <form id="feedback-form" class="feedback-form">
+            <div class="form-group">
+              <label class="form-label" for="feedback-category">Category</label>
+              <div class="category-pills">
+                <label class="category-pill-label">
+                  <input type="radio" name="feedback_type" value="💡 Idea / Feature" checked />
+                  <span>💡 Idea</span>
+                </label>
+                <label class="category-pill-label">
+                  <input type="radio" name="feedback_type" value="🐛 Bug Report" />
+                  <span>🐛 Bug</span>
+                </label>
+                <label class="category-pill-label">
+                  <input type="radio" name="feedback_type" value="⚖️ Recipe Balance" />
+                  <span>⚖️ Recipe</span>
+                </label>
+                <label class="category-pill-label">
+                  <input type="radio" name="feedback_type" value="❤️ Praise / General" />
+                  <span>❤️ General</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="feedback-message">Your Notes / Description</label>
+              <textarea 
+                id="feedback-message" 
+                class="form-textarea" 
+                rows="4" 
+                placeholder="Describe your bug, element idea, or suggestions..."
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="feedback-contact">Email / Handle (Optional)</label>
+              <input 
+                type="text" 
+                id="feedback-contact" 
+                class="form-input" 
+                placeholder="name@example.com (optional)"
+              />
+            </div>
+
+            <div class="feedback-stats-preview">
+              <span>Attached State: </span>
+              <span id="feedback-stat-summary" class="stat-tag">4/68 Discoveries</span>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" id="btn-cancel-feedback" class="btn">Cancel</button>
+              <button type="submit" id="btn-submit-feedback" class="btn btn-primary">
+                <span>🚀</span>
+                <span>Send Feedback</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Previous Feedback History (Local) -->
+          <div id="feedback-history-section" class="feedback-history-section">
+            <h4 class="history-title">Recent Submissions</h4>
+            <div id="feedback-history-list" class="feedback-history-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Game Engine -->
+    <script type="module" src="/script.js"></script>
+  </body>
+</html>

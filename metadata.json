@@ -1,0 +1,6 @@
+{
+  "name": "Emoji Alchemist",
+  "description": "A drag-and-drop emoji alchemy crafting game where you combine elements to discover new emojis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
