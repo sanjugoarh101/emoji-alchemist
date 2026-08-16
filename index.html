@@ -75,6 +75,11 @@
             <span class="btn-text">Feedback</span>
           </button>
 
+          <!-- Settings & Update Modal Button -->
+          <button id="btn-open-settings" class="btn btn-icon" title="Alchemy Settings & Updates" aria-label="Settings and Updates">
+            ⚙️
+          </button>
+
           <!-- Sound FX Toggle -->
           <button id="btn-toggle-audio" class="btn btn-icon" title="Toggle Sound FX" aria-label="Toggle Sound Effects">
             🔊
@@ -175,8 +180,94 @@
       </main>
     </div>
 
+    <!-- In-App Floating PWA Update Toast Banner -->
+    <div id="pwa-update-banner" class="pwa-update-banner" role="alert" aria-live="assertive" style="display: none;">
+      <div class="update-banner-inner">
+        <div class="update-banner-info">
+          <span class="update-icon">🧪</span>
+          <span class="update-text">New update available!</span>
+        </div>
+        <div class="update-banner-actions">
+          <button type="button" id="btn-update-now" class="btn btn-update-now" title="Apply update and refresh">
+            <span>Update Now</span>
+          </button>
+          <button type="button" id="btn-dismiss-update" class="btn-icon-dismiss" title="Dismiss" aria-label="Dismiss">✕</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Discovery Notification Toasts Container -->
     <div id="toast-container" aria-live="polite"></div>
+
+    <!-- Alchemy Settings & Updates Modal -->
+    <div id="settings-modal" class="modal-backdrop">
+      <div class="modal-window settings-window">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span>⚙️</span>
+            <span>Alchemy Settings</span>
+          </h3>
+          <button id="btn-close-settings" class="btn btn-icon" title="Close Settings" aria-label="Close Settings">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="settings-section">
+            <div class="settings-row">
+              <div class="settings-label-wrap">
+                <span class="settings-label-title">App Version</span>
+                <span class="settings-label-desc">Service Worker Cache & System Version</span>
+              </div>
+              <div class="settings-version-group">
+                <span class="version-tag" id="app-version-tag">v1.0.2</span>
+                <button type="button" id="btn-check-updates-settings" class="btn btn-check-updates" title="Check for element updates">
+                  <span>🔄 Check for Updates</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-wrap">
+                <span class="settings-label-title">Network Connection</span>
+                <span class="settings-label-desc">Real-time status for new element syncing</span>
+              </div>
+              <span id="settings-network-badge" class="network-badge online">
+                <span class="network-dot"></span>
+                <span id="settings-network-text">Online</span>
+              </span>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-wrap">
+                <span class="settings-label-title">Sound Effects</span>
+                <span class="settings-label-desc">Transmutation synthesizers & discovery chimes</span>
+              </div>
+              <button type="button" id="btn-settings-audio-toggle" class="btn btn-toggle-setting">
+                <span id="settings-audio-state-text">🔊 Sound Enabled</span>
+              </button>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-wrap">
+                <span class="settings-label-title">Player Progress Data</span>
+                <span class="settings-label-desc">Isolated local storage state</span>
+              </div>
+              <span class="safe-storage-badge">
+                <span>🔒 100% Safe & Offline-Ready</span>
+              </span>
+            </div>
+
+            <div class="settings-row danger-zone">
+              <div class="settings-label-wrap">
+                <span class="settings-label-title">Reset Progress</span>
+                <span class="settings-label-desc">Revert back to the 4 prime elements</span>
+              </div>
+              <button type="button" id="btn-settings-reset" class="btn btn-danger-hover">
+                <span>🗑️ Reset All</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Tier Milestone & Mastery Modal -->
     <div id="milestones-modal" class="modal-backdrop">

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emoji-alchemist-v3';
+const CACHE_NAME = 'emoji-alchemist-v3.1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -8,17 +8,17 @@ const ASSETS_TO_CACHE = [
   '/manifest.json'
 ];
 
-// Install Event - Pre-cache core assets & skip waiting for instant activation
+// Install Event - Pre-cache core assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[ServiceWorker] Pre-caching offline game assets');
       return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
-// Activate Event - Clean up previous cache versions & claim all clients immediately
+// Activate Event - Clean up previous cache versions & claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
@@ -34,9 +34,10 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Message Event - Support explicit skipWaiting requests
+// Message Event - Support explicit SKIP_WAITING requests for clean in-app updates
 self.addEventListener('message', (event) => {
   if (event.data && (event.data.type === 'SKIP_WAITING' || event.data.action === 'skipWaiting')) {
+    console.log('[ServiceWorker] SKIP_WAITING received, activating new worker now.');
     self.skipWaiting();
   }
 });
@@ -61,10 +62,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => {
-          // Offline fallback
-          return cachedResponse;
-        });
+        .catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })

@@ -147,11 +147,29 @@ class EmojiAlchemistGame {
     this.btnConfirmExit = document.getElementById("btn-confirm-exit");
     this.btnCloseExitModal = document.getElementById("btn-close-exit-modal");
 
+    // Settings Modal
+    this.settingsModalEl = document.getElementById("settings-modal");
+    this.btnOpenSettings = document.getElementById("btn-open-settings");
+    this.btnCloseSettings = document.getElementById("btn-close-settings");
+    this.btnCheckUpdatesSettings = document.getElementById("btn-check-updates-settings");
+    this.settingsNetworkBadgeEl = document.getElementById("settings-network-badge");
+    this.settingsNetworkTextEl = document.getElementById("settings-network-text");
+    this.btnSettingsAudioToggle = document.getElementById("btn-settings-audio-toggle");
+    this.settingsAudioStateTextEl = document.getElementById("settings-audio-state-text");
+    this.btnSettingsReset = document.getElementById("btn-settings-reset");
+
     // Banner & Controls
     this.engagementBannerEl = document.getElementById("pwa-engagement-banner");
     this.btnInstallPWA = document.getElementById("btn-install-pwa");
     this.btnDismissBanner = document.getElementById("btn-dismiss-banner");
     this.audioBtn = document.getElementById("btn-toggle-audio");
+
+    // Floating PWA Update Toast Banner
+    this.pwaUpdateBannerEl = document.getElementById("pwa-update-banner");
+    this.btnUpdateNow = document.getElementById("btn-update-now");
+    this.btnDismissUpdate = document.getElementById("btn-dismiss-update");
+    this.waitingWorker = null;
+    this.swRegistration = null;
 
     // Audio Engine
     this.audioEnabled = localStorage.getItem("emoji_alchemist_audio") !== "false";
@@ -191,16 +209,16 @@ class EmojiAlchemistGame {
   }
 
   /**
-   * PWA Service Worker & Install Prompt Setup with Seamless Auto-Update
+   * PWA Service Worker & Install Prompt Setup with In-App Updates & Offline Handling
    */
   setupPWAAndOffline() {
-    // 1. Register Service Worker & Listen for Controller Change for Seamless Auto-Update
+    // 1. Register Service Worker & Listen for Controller Change for Seamless In-App Updates
     if ("serviceWorker" in navigator) {
       let refreshing = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (!refreshing) {
           refreshing = true;
-          console.log("[PWA] Controller changed, auto-refreshing for seamless update...");
+          console.log("[PWA] Controller changed, seamlessly reloading to apply latest update...");
           window.location.reload();
         }
       });
@@ -208,14 +226,24 @@ class EmojiAlchemistGame {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js")
           .then((reg) => {
+            this.swRegistration = reg;
             console.log("[PWA] Service Worker registered successfully:", reg.scope);
+
+            // Check if an update is already waiting
+            if (reg.waiting) {
+              this.waitingWorker = reg.waiting;
+              this.showUpdateBanner();
+            }
+
+            // Listen for new service worker installation
             reg.addEventListener("updatefound", () => {
               const newWorker = reg.installing;
               if (newWorker) {
                 newWorker.addEventListener("statechange", () => {
                   if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                    console.log("[PWA] New service worker ready, dispatching skipWaiting...");
-                    newWorker.postMessage({ type: "SKIP_WAITING" });
+                    console.log("[PWA] New update is installed & waiting. Showing in-app banner...");
+                    this.waitingWorker = newWorker;
+                    this.showUpdateBanner();
                   }
                 });
               }
@@ -225,12 +253,30 @@ class EmojiAlchemistGame {
       });
     }
 
-    // 2. Banner Dismissed State
+    // 2. Offline Reconnection & Silent Update Check
+    window.addEventListener("online", () => {
+      console.log("[Network] Reconnected online. Silently checking for service worker updates...");
+      this.updateNetworkStatusUI();
+      this.showSimpleToast("🌐", "Back Online", "Internet reconnected. Checking for new elements...");
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.ready.then((reg) => {
+          reg.update().catch((err) => console.warn("[PWA] Silent update check error:", err));
+        });
+      }
+    });
+
+    window.addEventListener("offline", () => {
+      console.log("[Network] Connection offline. All recipes remain safely accessible.");
+      this.updateNetworkStatusUI();
+      this.showSimpleToast("📴", "Offline Mode", "Playing 100% offline. Progress is safely saved locally!");
+    });
+
+    // 3. Banner Dismissed State
     if (localStorage.getItem("emoji_alchemist_banner_dismissed") === "true") {
       if (this.engagementBannerEl) this.engagementBannerEl.classList.add("hidden");
     }
 
-    // 3. Capture PWA Install Prompt
+    // 4. Capture PWA Install Prompt
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       this.deferredInstallPrompt = e;
@@ -245,6 +291,70 @@ class EmojiAlchemistGame {
       this.deferredInstallPrompt = null;
       this.showSimpleToast("🎉", "App Installed", "Emoji Alchemist is now installed and ready to play 100% offline!");
     });
+  }
+
+  showUpdateBanner() {
+    if (this.pwaUpdateBannerEl) {
+      this.pwaUpdateBannerEl.style.display = "block";
+      this.playSound("pop");
+    }
+  }
+
+  hideUpdateBanner() {
+    if (this.pwaUpdateBannerEl) {
+      this.pwaUpdateBannerEl.style.display = "none";
+    }
+  }
+
+  applyAppUpdate() {
+    if (this.waitingWorker) {
+      console.log("[PWA] User triggered update, sending SKIP_WAITING to waiting worker...");
+      this.waitingWorker.postMessage({ type: "SKIP_WAITING" });
+    }
+    this.hideUpdateBanner();
+    setTimeout(() => {
+      window.location.reload();
+    }, 250);
+  }
+
+  async checkForManualUpdates() {
+    if (!navigator.onLine) {
+      this.showSimpleToast("📴", "Offline", "You are offline. Connect to the internet to check for new elements!");
+      return;
+    }
+
+    this.showSimpleToast("🔍", "Checking Updates", "Checking for latest element discoveries & updates...");
+
+    if ("serviceWorker" in navigator) {
+      try {
+        const reg = this.swRegistration || await navigator.serviceWorker.ready;
+        await reg.update();
+        if (this.waitingWorker || reg.waiting) {
+          this.waitingWorker = this.waitingWorker || reg.waiting;
+          this.showUpdateBanner();
+          this.showSimpleToast("🧪", "New Update Found!", "A new update is available. Tap 'Update Now' to apply.");
+        } else {
+          setTimeout(() => {
+            this.showSimpleToast("✨", "Up to Date", "You are playing on the latest version! (v1.0.2)");
+          }, 450);
+        }
+      } catch (err) {
+        console.warn("[PWA] Manual update check error:", err);
+        this.showSimpleToast("✨", "Up to Date", "You are playing on the latest version! (v1.0.2)");
+      }
+    } else {
+      this.showSimpleToast("✨", "Up to Date", "You are playing on the latest version! (v1.0.2)");
+    }
+  }
+
+  updateNetworkStatusUI() {
+    const isOnline = navigator.onLine;
+    if (this.settingsNetworkBadgeEl) {
+      this.settingsNetworkBadgeEl.className = `network-badge ${isOnline ? "online" : "offline"}`;
+    }
+    if (this.settingsNetworkTextEl) {
+      this.settingsNetworkTextEl.textContent = isOnline ? "Online" : "Offline";
+    }
   }
 
   /**
@@ -1077,6 +1187,33 @@ class EmojiAlchemistGame {
       this.audioBtn.textContent = this.audioEnabled ? "🔊" : "🔇";
       this.audioBtn.title = this.audioEnabled ? "Sound Effects Enabled" : "Sound Effects Muted";
     }
+    if (this.settingsAudioStateTextEl) {
+      this.settingsAudioStateTextEl.textContent = this.audioEnabled ? "🔊 Sound Enabled" : "🔇 Sound Muted";
+    }
+  }
+
+  openSettings(fromPopState = false) {
+    this.updateNetworkStatusUI();
+    this.updateAudioButtonUI();
+    if (this.settingsModalEl) this.settingsModalEl.classList.add("open");
+    if (!fromPopState) {
+      try {
+        history.pushState({ modal: "settings" }, "");
+      } catch (e) {
+        console.warn("History pushState error:", e);
+      }
+    }
+  }
+
+  closeSettings(fromPopState = false) {
+    if (this.settingsModalEl) this.settingsModalEl.classList.remove("open");
+    if (!fromPopState && history.state?.modal === "settings") {
+      try {
+        history.back();
+      } catch (e) {
+        console.warn("History back error:", e);
+      }
+    }
   }
 
   openGrimoire() {
@@ -1470,6 +1607,10 @@ class EmojiAlchemistGame {
         this.closeExitModal(true);
         return;
       }
+      if (this.settingsModalEl?.classList.contains("open")) {
+        this.closeSettings(true);
+        return;
+      }
       if (this.grimoireModalEl?.classList.contains("open")) {
         this.closeGrimoire(true);
         return;
@@ -1625,6 +1766,52 @@ class EmojiAlchemistGame {
     if (this.exitModalEl) {
       this.exitModalEl.addEventListener("click", (e) => {
         if (e.target === this.exitModalEl) this.closeExitModal();
+      });
+    }
+
+    // In-App Floating PWA Update Toast Banner Event Listeners
+    if (this.btnUpdateNow) {
+      this.btnUpdateNow.addEventListener("click", () => this.applyAppUpdate());
+    }
+
+    if (this.btnDismissUpdate) {
+      this.btnDismissUpdate.addEventListener("click", () => this.hideUpdateBanner());
+    }
+
+    // Alchemy Settings & Updates Modal
+    if (this.btnOpenSettings) {
+      this.btnOpenSettings.addEventListener("click", () => this.openSettings());
+    }
+
+    if (this.btnCloseSettings) {
+      this.btnCloseSettings.addEventListener("click", () => this.closeSettings());
+    }
+
+    if (this.settingsModalEl) {
+      this.settingsModalEl.addEventListener("click", (e) => {
+        if (e.target === this.settingsModalEl) this.closeSettings();
+      });
+    }
+
+    if (this.btnCheckUpdatesSettings) {
+      this.btnCheckUpdatesSettings.addEventListener("click", () => this.checkForManualUpdates());
+    }
+
+    if (this.btnSettingsAudioToggle) {
+      this.btnSettingsAudioToggle.addEventListener("click", () => {
+        this.audioEnabled = !this.audioEnabled;
+        localStorage.setItem("emoji_alchemist_audio", this.audioEnabled ? "true" : "false");
+        this.updateAudioButtonUI();
+        if (this.audioEnabled) {
+          this.playSound("pop");
+        }
+      });
+    }
+
+    if (this.btnSettingsReset) {
+      this.btnSettingsReset.addEventListener("click", () => {
+        this.closeSettings();
+        this.resetGame();
       });
     }
 
