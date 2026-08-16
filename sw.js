@@ -42,6 +42,30 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Periodic Background Sync - Check and fetch updates when connected to Wi-Fi/Data
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'check-game-updates') {
+    console.log('[ServiceWorker] Periodic sync triggered: check-game-updates');
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) => {
+        return Promise.all(
+          ASSETS_TO_CACHE.map((asset) => {
+            return fetch(asset, { cache: 'no-cache' })
+              .then((response) => {
+                if (response && response.status === 200) {
+                  return cache.put(asset, response);
+                }
+              })
+              .catch((err) => {
+                console.warn('[ServiceWorker] Periodic sync asset fetch error for:', asset, err);
+              });
+          })
+        );
+      })
+    );
+  }
+});
+
 // Fetch Event - Stale-While-Revalidate with Cache Fallback for 100% Offline Gameplay
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;

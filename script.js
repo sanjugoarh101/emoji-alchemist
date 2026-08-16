@@ -229,6 +229,9 @@ class EmojiAlchemistGame {
             this.swRegistration = reg;
             console.log("[PWA] Service Worker registered successfully:", reg.scope);
 
+            // Register 24-hour Periodic Background Sync for background updates on Android/Chrome
+            this.registerPeriodicBackgroundSync(reg);
+
             // Check if an update is already waiting
             if (reg.waiting) {
               this.waitingWorker = reg.waiting;
@@ -291,6 +294,30 @@ class EmojiAlchemistGame {
       this.deferredInstallPrompt = null;
       this.showSimpleToast("🎉", "App Installed", "Emoji Alchemist is now installed and ready to play 100% offline!");
     });
+  }
+
+  /**
+   * Request 24-hour Periodic Background Sync for automatic background cache checks
+   */
+  async registerPeriodicBackgroundSync(registration = null) {
+    if ("serviceWorker" in navigator) {
+      try {
+        const reg = registration || this.swRegistration || (await navigator.serviceWorker.ready);
+        if ("periodicSync" in reg) {
+          const tags = await reg.periodicSync.getTags();
+          if (!tags.includes("check-game-updates")) {
+            await reg.periodicSync.register("check-game-updates", {
+              minInterval: 24 * 60 * 60 * 1000, // 24 hours
+            });
+            console.log("[PWA] Periodic Background Sync registered for 'check-game-updates' (24h interval)");
+          } else {
+            console.log("[PWA] Periodic Background Sync already active for 'check-game-updates'");
+          }
+        }
+      } catch (err) {
+        console.log("[PWA] Periodic Background Sync registration info:", err.message || err);
+      }
+    }
   }
 
   showUpdateBanner() {
