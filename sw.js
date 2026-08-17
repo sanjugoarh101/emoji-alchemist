@@ -1,11 +1,13 @@
-const CACHE_NAME = 'emoji-alchemist-v3.1';
+const CACHE_NAME = 'emoji-alchemist-v3.2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/style.css',
   '/script.js',
   '/combinations.json',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Install Event - Pre-cache core assets

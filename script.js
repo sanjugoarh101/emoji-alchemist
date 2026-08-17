@@ -194,6 +194,7 @@ class EmojiAlchemistGame {
       console.warn("History API initialization:", e);
     }
 
+    this.initSplashScreen();
     this.setupPWAAndOffline();
     await this.loadRecipeData();
     this.loadSavedProgress();
@@ -204,6 +205,26 @@ class EmojiAlchemistGame {
     this.renderFeedbackHistory();
     this.setupEventListeners();
     this.setupAntiFrustrationGuards();
+  }
+
+  /**
+   * Randomized Dynamic Splash Screen (1200ms - 2400ms load, 0.5s smooth fade-out)
+   */
+  initSplashScreen() {
+    const randomLoadTime = Math.floor(Math.random() * (2400 - 1200 + 1)) + 1200;
+    setTimeout(() => {
+      const splash = document.getElementById("splash-screen");
+      if (splash) {
+        splash.classList.add("fade-out");
+        setTimeout(() => {
+          if (splash.parentNode) {
+            splash.remove();
+          } else {
+            splash.style.display = "none";
+          }
+        }, 500);
+      }
+    }, randomLoadTime);
   }
 
   /**
