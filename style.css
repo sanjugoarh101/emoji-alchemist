@@ -1721,6 +1721,192 @@ input, textarea {
 }
 
 /* ==========================================================================
+   2-Step Custom PWA Install Confirmation Modal
+   ========================================================================== */
+#install-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 14, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+  opacity: 0;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#install-modal.open {
+  display: flex;
+  opacity: 1;
+}
+
+.install-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: rgba(11, 15, 25, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 35px rgba(168, 85, 247, 0.35), 0 20px 40px rgba(0, 0, 0, 0.7);
+  padding: 28px 24px 24px;
+  text-align: center;
+  transform: scale(0.94);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+#install-modal.open .install-modal-card {
+  transform: scale(1);
+}
+
+.install-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.install-modal-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.install-modal-orb {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.install-orb-aura {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.6) 0%, rgba(137, 87, 229, 0.2) 60%, transparent 80%);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+  animation: splashAuraPulse 2s ease-in-out infinite alternate;
+}
+
+.install-orb-icon {
+  font-size: 3rem;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.8));
+}
+
+.install-modal-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 16px rgba(168, 85, 247, 0.4);
+}
+
+.install-modal-subheading {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0 0 20px;
+}
+
+.install-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.install-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.install-feature-item:hover {
+  background: rgba(168, 85, 247, 0.08);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.install-feature-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.install-feature-text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.install-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-modal-cancel {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-modal-cancel:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+.btn-modal-confirm {
+  flex: 1.3;
+  padding: 12px 18px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #8957e5 0%, #a855f7 50%, #388bfd 100%);
+  border: none;
+  color: #ffffff;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-modal-confirm:hover {
+  box-shadow: 0 0 28px rgba(168, 85, 247, 0.8), 0 6px 16px rgba(0, 0, 0, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
    Mobile Stacked Layout & Expandable Grid Drawer (@media max-width: 768px)
    ========================================================================== */
 @media (max-width: 768px) {

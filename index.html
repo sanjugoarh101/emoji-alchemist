@@ -400,6 +400,41 @@
       </div>
     </div>
 
+    <!-- Custom Install Confirmation Modal (2-Step PWA Flow) -->
+    <div id="install-modal" class="modal-overlay install-modal-backdrop" aria-hidden="true" role="dialog" aria-labelledby="install-modal-title">
+      <div class="modal-card install-modal-card">
+        <button id="btn-close-install-modal" class="btn-icon-close install-modal-close" title="Close" aria-label="Close">✕</button>
+        <div class="install-modal-content">
+          <div class="install-modal-orb">
+            <div class="install-orb-aura"></div>
+            <span class="install-orb-icon">🔮</span>
+          </div>
+          <h3 id="install-modal-title" class="install-modal-title">Emoji Alchemist</h3>
+          <p class="install-modal-subheading">Install to Home Screen for the ultimate offline experience!</p>
+          
+          <div class="install-features-list">
+            <div class="install-feature-item">
+              <span class="install-feature-icon">⚡</span>
+              <span class="install-feature-text">Play 100% Offline</span>
+            </div>
+            <div class="install-feature-item">
+              <span class="install-feature-icon">🚀</span>
+              <span class="install-feature-text">Full-Screen App Look</span>
+            </div>
+            <div class="install-feature-item">
+              <span class="install-feature-icon">💾</span>
+              <span class="install-feature-text">Takes &lt; 2MB Storage</span>
+            </div>
+          </div>
+          
+          <div class="install-modal-actions">
+            <button type="button" id="modal-cancel-btn" class="btn btn-modal-cancel">Maybe Later</button>
+            <button type="button" id="modal-confirm-btn" class="btn btn-primary btn-modal-confirm">📲 Install Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Custom Exit Confirmation Modal -->
     <div id="modal-exit" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="exit-modal-title">
       <div class="modal-card exit-modal-card">

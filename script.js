@@ -142,10 +142,17 @@ class EmojiAlchemistGame {
     this.feedbackFormEl = document.getElementById("feedback-form");
     this.feedbackHistoryListEl = document.getElementById("feedback-history-list");
     this.feedbackStatSummaryEl = document.getElementById("feedback-stat-summary");
+    // Custom Exit Confirmation Modal
     this.exitModalEl = document.getElementById("modal-exit");
     this.btnKeepPlaying = document.getElementById("btn-keep-playing");
     this.btnConfirmExit = document.getElementById("btn-confirm-exit");
     this.btnCloseExitModal = document.getElementById("btn-close-exit-modal");
+
+    // 2-Step Custom Install Confirmation Modal
+    this.installModalEl = document.getElementById("install-modal");
+    this.modalCancelBtn = document.getElementById("modal-cancel-btn");
+    this.modalConfirmBtn = document.getElementById("modal-confirm-btn");
+    this.btnCloseInstallModal = document.getElementById("btn-close-install-modal");
 
     // Settings Modal
     this.settingsModalEl = document.getElementById("settings-modal");
@@ -303,6 +310,7 @@ class EmojiAlchemistGame {
     // 4. Capture PWA Install Prompt
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
+      this.deferredPrompt = e;
       this.deferredInstallPrompt = e;
       if (this.btnInstallPWA) {
         this.btnInstallPWA.style.display = "inline-flex";
@@ -312,7 +320,9 @@ class EmojiAlchemistGame {
     window.addEventListener("appinstalled", () => {
       console.log("[PWA] Application installed on home screen!");
       if (this.engagementBannerEl) this.engagementBannerEl.classList.add("hidden");
+      this.deferredPrompt = null;
       this.deferredInstallPrompt = null;
+      this.closeInstallModal();
       this.showSimpleToast("🎉", "App Installed", "Emoji Alchemist is now installed and ready to play 100% offline!");
     });
   }
@@ -1519,6 +1529,59 @@ class EmojiAlchemistGame {
     }, 120);
   }
 
+  /**
+   * 2-Step Custom PWA Install Confirmation Modal Methods
+   */
+  openInstallModal(fromPopState = false) {
+    if (!this.installModalEl) return;
+    this.installModalEl.classList.add("open");
+    this.playSound("pop");
+    if (!fromPopState) {
+      try {
+        history.pushState({ modal: "install" }, "");
+      } catch (e) {
+        console.warn("History pushState error:", e);
+      }
+    }
+  }
+
+  closeInstallModal(fromPopState = false) {
+    if (this.installModalEl) this.installModalEl.classList.remove("open");
+    if (!fromPopState && history.state?.modal === "install") {
+      try {
+        history.back();
+      } catch (e) {
+        console.warn("History back error:", e);
+      }
+    }
+  }
+
+  confirmInstallFromModal() {
+    this.closeInstallModal();
+    const promptEvent = this.deferredPrompt || this.deferredInstallPrompt;
+    if (promptEvent) {
+      promptEvent.prompt();
+      promptEvent.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === "accepted") {
+          console.log("[PWA] User accepted install prompt");
+          this.showSimpleToast("🎉", "Installing App", "Emoji Alchemist is being added to your Home Screen!");
+        } else {
+          console.log("[PWA] User dismissed install prompt");
+        }
+        this.deferredPrompt = null;
+        this.deferredInstallPrompt = null;
+      }).catch((err) => {
+        console.warn("[PWA] Install prompt error:", err);
+      });
+    } else {
+      this.showSimpleToast(
+        "📲",
+        "Install / Add to Home Screen",
+        "On iOS: Tap Share -> 'Add to Home Screen'. On Android/Chrome: Tap browser menu -> 'Install App'."
+      );
+    }
+  }
+
   renderFeedbackHistory() {
     if (!this.feedbackHistoryListEl) return;
     this.feedbackHistoryListEl.innerHTML = "";
@@ -1748,6 +1811,13 @@ class EmojiAlchemistGame {
         } catch (_) {}
         return;
       }
+      if (this.installModalEl?.classList.contains("open")) {
+        this.closeInstallModal(true);
+        try {
+          history.pushState({ page: "main" }, "");
+        } catch (_) {}
+        return;
+      }
 
       // Case B: If no modals or drawers are open, re-push state and display custom stylized Exit Modal
       try {
@@ -1969,24 +2039,42 @@ class EmojiAlchemistGame {
       });
     }
 
-    // PWA Install Button Handler
-    if (this.btnInstallPWA) {
-      this.btnInstallPWA.addEventListener("click", async () => {
-        if (this.deferredInstallPrompt) {
-          this.deferredInstallPrompt.prompt();
-          const { outcome } = await this.deferredInstallPrompt.userChoice;
-          if (outcome === "accepted") {
-            console.log("[PWA] User accepted install prompt");
-          }
-          this.deferredInstallPrompt = null;
-        } else {
-          this.showSimpleToast(
-            "📲",
-            "Install / Add to Home Screen",
-            "On iOS: Tap Share -> 'Add to Home Screen'. On Android/Chrome: Tap browser menu -> 'Install App'."
-          );
-        }
+    // 2-Step Custom PWA Install Modal Event Listeners
+    if (this.modalCancelBtn) {
+      this.modalCancelBtn.addEventListener("click", () => this.closeInstallModal());
+    }
+
+    if (this.btnCloseInstallModal) {
+      this.btnCloseInstallModal.addEventListener("click", () => this.closeInstallModal());
+    }
+
+    if (this.modalConfirmBtn) {
+      this.modalConfirmBtn.addEventListener("click", () => this.confirmInstallFromModal());
+    }
+
+    if (this.installModalEl) {
+      this.installModalEl.addEventListener("click", (e) => {
+        if (e.target === this.installModalEl) this.closeInstallModal();
       });
+    }
+
+    // Top Banner & Badges trigger Custom Install Modal
+    if (this.btnInstallPWA) {
+      this.btnInstallPWA.addEventListener("click", () => {
+        this.openInstallModal();
+      });
+    }
+
+    const bannerBadge = document.querySelector(".banner-badge");
+    if (bannerBadge) {
+      bannerBadge.style.cursor = "pointer";
+      bannerBadge.addEventListener("click", () => this.openInstallModal());
+    }
+
+    const bannerText = document.querySelector(".banner-text");
+    if (bannerText) {
+      bannerText.style.cursor = "pointer";
+      bannerText.addEventListener("click", () => this.openInstallModal());
     }
 
     // Initial base elements spawn on canvas
