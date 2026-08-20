@@ -342,19 +342,19 @@
             <div class="form-group">
               <label class="form-label" for="feedback-category">Category</label>
               <div class="category-pills">
-                <label class="category-pill-label">
+                <label class="category-pill-label category-pill active">
                   <input type="radio" name="feedback_type" value="💡 Idea / Feature" checked />
                   <span>💡 Idea</span>
                 </label>
-                <label class="category-pill-label">
+                <label class="category-pill-label category-pill">
                   <input type="radio" name="feedback_type" value="🐛 Bug Report" />
                   <span>🐛 Bug</span>
                 </label>
-                <label class="category-pill-label">
+                <label class="category-pill-label category-pill">
                   <input type="radio" name="feedback_type" value="⚖️ Recipe Balance" />
                   <span>⚖️ Recipe</span>
                 </label>
-                <label class="category-pill-label">
+                <label class="category-pill-label category-pill">
                   <input type="radio" name="feedback_type" value="❤️ Praise / General" />
                   <span>❤️ General</span>
                 </label>
@@ -430,6 +430,28 @@
           <div class="install-modal-actions">
             <button type="button" id="modal-cancel-btn" class="btn btn-modal-cancel">Maybe Later</button>
             <button type="button" id="modal-confirm-btn" class="btn btn-primary btn-modal-confirm">📲 Install Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Reset Confirmation Modal -->
+    <div id="reset-modal" class="modal-overlay reset-modal-backdrop" aria-hidden="true" role="dialog" aria-labelledby="reset-modal-title">
+      <div class="modal-card reset-modal-card">
+        <div class="modal-header reset-modal-header">
+          <div class="modal-title-wrap">
+            <h3 id="reset-modal-title" class="modal-title">⚠️ Reset Alchemy Progress?</h3>
+          </div>
+          <button id="btn-close-reset-modal" class="btn-icon-close" title="Close" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body reset-modal-body">
+          <div class="reset-modal-content">
+            <div class="reset-modal-art">⚠️</div>
+            <p class="reset-modal-subtext">This will wipe all discovered elements and revert your lab back to the 4 basic elements. This action cannot be undone!</p>
+          </div>
+          <div class="reset-modal-actions">
+            <button type="button" id="cancel-reset-btn" class="btn btn-secondary btn-cancel-reset">Keep Playing</button>
+            <button type="button" id="confirm-reset-btn" class="btn danger-btn btn-confirm-reset">🔥 Reset Everything</button>
           </div>
         </div>
       </div>

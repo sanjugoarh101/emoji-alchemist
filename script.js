@@ -148,6 +148,12 @@ class EmojiAlchemistGame {
     this.btnConfirmExit = document.getElementById("btn-confirm-exit");
     this.btnCloseExitModal = document.getElementById("btn-close-exit-modal");
 
+    // Custom Reset Confirmation Modal
+    this.resetModalEl = document.getElementById("reset-modal");
+    this.cancelResetBtn = document.getElementById("cancel-reset-btn");
+    this.confirmResetBtn = document.getElementById("confirm-reset-btn");
+    this.btnCloseResetModal = document.getElementById("btn-close-reset-modal");
+
     // 2-Step Custom Install Confirmation Modal
     this.installModalEl = document.getElementById("install-modal");
     this.modalCancelBtn = document.getElementById("modal-cancel-btn");
@@ -1556,6 +1562,27 @@ class EmojiAlchemistGame {
     }
   }
 
+  showInstallFallbackInstructions() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    let icon = "📲";
+    let title = "Install App";
+    let message = "To install, tap your browser menu (⋮) at the top right and select 'Add to Home screen' or 'Install app'.";
+
+    if (isIOS) {
+      icon = "🍎";
+      title = "Install on iOS (Safari)";
+      message = "To install on iPhone, tap the Share button (⎋) in Safari and select 'Add to Home Screen'.";
+    } else if (isAndroid) {
+      icon = "🤖";
+      title = "Install on Android";
+      message = "To install, tap your browser menu (⋮) at the top right and select 'Add to Home screen' or 'Install app'.";
+    }
+
+    this.showSimpleToast(icon, title, message);
+  }
+
   confirmInstallFromModal() {
     this.closeInstallModal();
     const promptEvent = this.deferredPrompt || this.deferredInstallPrompt;
@@ -1572,13 +1599,10 @@ class EmojiAlchemistGame {
         this.deferredInstallPrompt = null;
       }).catch((err) => {
         console.warn("[PWA] Install prompt error:", err);
+        this.showInstallFallbackInstructions();
       });
     } else {
-      this.showSimpleToast(
-        "📲",
-        "Install / Add to Home Screen",
-        "On iOS: Tap Share -> 'Add to Home Screen'. On Android/Chrome: Tap browser menu -> 'Install App'."
-      );
+      this.showInstallFallbackInstructions();
     }
   }
 
@@ -1619,29 +1643,19 @@ class EmojiAlchemistGame {
       e.preventDefault();
     }
 
-    // Read the text value from the active category selector button or radio pill
-    const activeCategoryEl = this.feedbackFormEl ? (
-      this.feedbackFormEl.querySelector(".category-btn.active, .category-pill.active, button.active") ||
-      this.feedbackFormEl.querySelector("input[name='feedback_type']:checked")
-    ) : null;
-
-    let selectedCategory = "💡 Idea / Feature";
-    if (activeCategoryEl) {
-      if (activeCategoryEl.value) {
-        selectedCategory = activeCategoryEl.value;
-      } else if (activeCategoryEl.textContent) {
-        selectedCategory = activeCategoryEl.textContent.trim();
-      } else if (activeCategoryEl.parentElement && activeCategoryEl.parentElement.textContent) {
-        selectedCategory = activeCategoryEl.parentElement.textContent.trim();
-      }
-    }
-
     // Read feedback text from textarea
     const feedbackTextarea = document.getElementById("feedback-message");
     const feedbackText = feedbackTextarea ? feedbackTextarea.value.trim() : (typeof e === "string" ? e.trim() : "");
 
     // Check that feedback isn't empty
     if (!feedbackText) return;
+
+    // Explicitly read active category pill for Google Sheet payload alignment
+    const activeCategory = document.querySelector('.category-pill.active')?.innerText || 'General';
+    const payload = {
+      category: activeCategory,
+      feedback: feedbackText
+    };
 
     // 1. Check if the user is offline
     if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -1665,10 +1679,10 @@ class EmojiAlchemistGame {
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ category: selectedCategory, feedback: feedbackText })
+          body: JSON.stringify(payload)
         })
         .then(() => {
-          this.handleFeedbackSuccess(feedbackText, selectedCategory, progressString, timestampStr, feedbackTextarea);
+          this.handleFeedbackSuccess(feedbackText, activeCategory, progressString, timestampStr, feedbackTextarea);
         })
         .catch(err => {
           console.error("Error sending feedback:", err);
@@ -1681,8 +1695,8 @@ class EmojiAlchemistGame {
         this.showSimpleToast("❌", "Delivery Error", errorMsg);
       }
     } else {
-      console.info("[Feedback] Mock dispatch - replace FEEDBACK_WEB_APP_URL with your live Google Apps Script deployment URL.", { category: selectedCategory, feedback: feedbackText });
-      this.handleFeedbackSuccess(feedbackText, selectedCategory, progressString, timestampStr, feedbackTextarea);
+      console.info("[Feedback] Google Sheet dispatch payload:", payload);
+      this.handleFeedbackSuccess(feedbackText, activeCategory, progressString, timestampStr, feedbackTextarea);
     }
   }
 
@@ -1706,7 +1720,14 @@ class EmojiAlchemistGame {
 
     // Clear input box and reset form
     if (messageInput) messageInput.value = "";
-    if (this.feedbackFormEl) this.feedbackFormEl.reset();
+    if (this.feedbackFormEl) {
+      this.feedbackFormEl.reset();
+      const pills = this.feedbackFormEl.querySelectorAll(".category-pill");
+      pills.forEach((p, idx) => {
+        if (idx === 0) p.classList.add("active");
+        else p.classList.remove("active");
+      });
+    }
 
     // Close modal and play sound
     this.closeFeedbackModal();
@@ -1749,18 +1770,65 @@ class EmojiAlchemistGame {
     elements.forEach(el => el.remove());
   }
 
-  resetGame() {
-    if (confirm("Reset all unlocked emojis and start fresh with the 4 base elements?")) {
-      localStorage.removeItem("emoji_alchemist_unlocked");
-      localStorage.removeItem("emoji_alchemist_recipes");
-      this.unlockedInventory.clear();
-      this.discoveredRecipes.clear();
-      this.clearCanvas();
-      this.loadSavedProgress();
-      this.renderInventory();
-      this.updateStats();
-      this.playSound("fail");
+  /**
+   * Custom Reset Progress Modal Methods
+   */
+  openResetModal(fromPopState = false) {
+    if (!this.resetModalEl) return;
+    this.resetModalEl.classList.add("open");
+    this.playSound("pop");
+    if (!fromPopState) {
+      try {
+        history.pushState({ modal: "reset" }, "");
+      } catch (e) {
+        console.warn("History pushState error:", e);
+      }
     }
+  }
+
+  closeResetModal(fromPopState = false) {
+    if (this.resetModalEl) this.resetModalEl.classList.remove("open");
+    if (!fromPopState && history.state?.modal === "reset") {
+      try {
+        history.back();
+      } catch (e) {
+        console.warn("History back error:", e);
+      }
+    }
+  }
+
+  executeResetGame() {
+    this.closeResetModal();
+    localStorage.removeItem("emoji_alchemist_unlocked");
+    localStorage.removeItem("emoji_alchemist_recipes");
+    this.unlockedInventory.clear();
+    this.discoveredRecipes.clear();
+    this.clearCanvas();
+    this.loadSavedProgress();
+    this.renderInventory();
+    this.updateStats();
+    this.playSound("fail");
+    this.showSimpleToast("🔄", "Progress Reset", "Your alchemy lab has been reset to the 4 base elements.");
+
+    // Initial base elements spawn on canvas
+    setTimeout(() => {
+      if (this.canvasEl.children.length === 0) {
+        const canvasRect = this.canvasEl.getBoundingClientRect();
+        const startY = Math.max(30, canvasRect.height / 2 - 40);
+        const itemSize = window.innerWidth <= 768 ? 68 : 76;
+        const spacing = itemSize + 16;
+        const totalW = this.baseElements.length * spacing;
+        const startX = Math.max(20, (canvasRect.width - totalW) / 2);
+
+        this.baseElements.forEach((base, idx) => {
+          this.spawnElementOnCanvas(base.emoji, base.name, startX + idx * spacing, startY, true);
+        });
+      }
+    }, 100);
+  }
+
+  resetGame() {
+    this.openResetModal();
   }
 
   setupEventListeners() {
@@ -1813,6 +1881,13 @@ class EmojiAlchemistGame {
       }
       if (this.installModalEl?.classList.contains("open")) {
         this.closeInstallModal(true);
+        try {
+          history.pushState({ page: "main" }, "");
+        } catch (_) {}
+        return;
+      }
+      if (this.resetModalEl?.classList.contains("open")) {
+        this.closeResetModal(true);
         try {
           history.pushState({ page: "main" }, "");
         } catch (_) {}
@@ -2036,6 +2111,36 @@ class EmojiAlchemistGame {
       this.btnDismissBanner.addEventListener("click", () => {
         if (this.engagementBannerEl) this.engagementBannerEl.classList.add("hidden");
         localStorage.setItem("emoji_alchemist_banner_dismissed", "true");
+      });
+    }
+
+    // Category Pill Selection Handler
+    const categoryPillEls = document.querySelectorAll(".category-pill");
+    categoryPillEls.forEach(pill => {
+      pill.addEventListener("click", () => {
+        categoryPillEls.forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        const radio = pill.querySelector("input[type='radio']");
+        if (radio) radio.checked = true;
+      });
+    });
+
+    // Custom Reset Confirmation Modal Event Listeners
+    if (this.cancelResetBtn) {
+      this.cancelResetBtn.addEventListener("click", () => this.closeResetModal());
+    }
+
+    if (this.btnCloseResetModal) {
+      this.btnCloseResetModal.addEventListener("click", () => this.closeResetModal());
+    }
+
+    if (this.confirmResetBtn) {
+      this.confirmResetBtn.addEventListener("click", () => this.executeResetGame());
+    }
+
+    if (this.resetModalEl) {
+      this.resetModalEl.addEventListener("click", (e) => {
+        if (e.target === this.resetModalEl) this.closeResetModal();
       });
     }
 
