@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emoji-alchemist-v3.2';
+const CACHE_NAME = 'emoji-alchemist-v1.0.3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -14,7 +14,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching offline game assets');
+      console.log('[ServiceWorker] Pre-caching offline game assets for', CACHE_NAME);
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -23,31 +23,24 @@ self.addEventListener('install', (event) => {
 // Activate Event - Clean up previous cache versions & claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(
-        keyList.map((key) => {
-          if (key !== CACHE_NAME) {
-            console.log('[ServiceWorker] Removing old cache version:', key);
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((key) => key !== CACHE_NAME && caches.delete(key)))
+    ).then(() => self.clients.claim())
   );
 });
 
-// Message Event - Support explicit SKIP_WAITING requests for clean in-app updates
+// Message Event - Support explicit skipWaiting requests for in-app updates
 self.addEventListener('message', (event) => {
-  if (event.data && (event.data.type === 'SKIP_WAITING' || event.data.action === 'skipWaiting')) {
-    console.log('[ServiceWorker] SKIP_WAITING received, activating new worker now.');
+  if (event.data && (event.data.action === 'skipWaiting' || event.data.type === 'SKIP_WAITING')) {
+    console.log('[ServiceWorker] skipWaiting message received, activating immediately.');
     self.skipWaiting();
   }
 });
 
-// Periodic Background Sync - Check and fetch updates when connected to Wi-Fi/Data
+// Periodic Background Sync - Check and fetch updates when connected to internet in background
 self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'check-game-updates') {
-    console.log('[ServiceWorker] Periodic sync triggered: check-game-updates');
+  if (event.tag === 'check-update' || event.tag === 'check-game-updates') {
+    console.log('[ServiceWorker] Periodic background sync triggered tag:', event.tag);
     event.waitUntil(
       caches.open(CACHE_NAME).then((cache) => {
         return Promise.all(
@@ -68,29 +61,9 @@ self.addEventListener('periodicsync', (event) => {
   }
 });
 
-// Fetch Event - Stale-While-Revalidate with Cache Fallback for 100% Offline Gameplay
+// Fetch Event - Explicit cache fallback listener for Chrome WebAPK & offline readiness
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (
-            networkResponse &&
-            networkResponse.status === 200 &&
-            networkResponse.type === 'basic'
-          ) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
-
-      return cachedResponse || fetchPromise;
-    })
+    caches.match(event.request).then((response) => response || fetch(event.request))
   );
 });

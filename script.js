@@ -12,6 +12,23 @@
  * - Procedural Web Audio API sound synthesizer
  */
 
+// Centralized Application Version
+const APP_VERSION = "1.0.3";
+
+// Initial standalone WebAPK / PWA check on immediate script evaluation
+if (typeof window !== "undefined") {
+  const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || Boolean(navigator.standalone);
+  if (isStandalone) {
+    if (document.body) {
+      document.body.classList.add('app-standalone');
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body?.classList.add('app-standalone');
+      });
+    }
+  }
+}
+
 // Google Apps Script / Webhook Endpoint for Anonymous Player Feedback
 const FEEDBACK_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw7LnqgziY533U9Qtp5h4w6p7Zcb0kNQk9BX82dX44a-P9dJcABcO-KCtcPHlnVkXyt/exec";
 
@@ -172,7 +189,7 @@ class EmojiAlchemistGame {
     this.btnSettingsReset = document.getElementById("btn-settings-reset");
 
     // Banner & Controls
-    this.engagementBannerEl = document.getElementById("pwa-engagement-banner");
+    this.engagementBannerEl = document.getElementById("install-banner") || document.getElementById("pwa-engagement-banner");
     this.btnInstallPWA = document.getElementById("btn-install-pwa");
     this.btnDismissBanner = document.getElementById("btn-dismiss-banner");
     this.audioBtn = document.getElementById("btn-toggle-audio");
@@ -200,6 +217,11 @@ class EmojiAlchemistGame {
   }
 
   async init() {
+    // 0. Standalone Check on Boot (WebAPK & PWA Standalone Mode)
+    if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+      document.body.classList.add('app-standalone');
+    }
+
     // Push baseline history state on initial app load for robust back-button interception
     try {
       history.pushState({ page: "main" }, "");
@@ -207,6 +229,11 @@ class EmojiAlchemistGame {
       console.warn("History API initialization:", e);
     }
 
+    // Record and check app open timestamps for auto-update logic (2+ days offline / inactive return)
+    this.previousAppOpen = parseInt(localStorage.getItem("lastAppOpen") || "0", 10);
+    localStorage.setItem("lastAppOpen", Date.now().toString());
+
+    this.initAppVersion();
     this.initSplashScreen();
     this.setupPWAAndOffline();
     await this.loadRecipeData();
@@ -218,6 +245,24 @@ class EmojiAlchemistGame {
     this.renderFeedbackHistory();
     this.setupEventListeners();
     this.setupAntiFrustrationGuards();
+  }
+
+  /**
+   * Centralized Version Initialization
+   */
+  initAppVersion() {
+    const versionLabelEl = document.getElementById("app-version-label") || document.getElementById("app-version-tag");
+    if (versionLabelEl) {
+      versionLabelEl.textContent = `v${APP_VERSION}`;
+    }
+    const allVersionTags = document.querySelectorAll(".version-tag, #app-version-label, #app-version-tag");
+    allVersionTags.forEach((el) => {
+      el.textContent = `v${APP_VERSION}`;
+    });
+    const subtextEl = document.getElementById("update-subtext");
+    if (subtextEl) {
+      subtextEl.textContent = `Version ${APP_VERSION} is ready with performance improvements.`;
+    }
   }
 
   /**
@@ -265,20 +310,17 @@ class EmojiAlchemistGame {
             this.registerPeriodicBackgroundSync(reg);
 
             // Check if an update is already waiting
-            if (reg.waiting) {
-              this.waitingWorker = reg.waiting;
-              this.showUpdateBanner();
+            if (reg.waiting && navigator.serviceWorker.controller) {
+              this.checkAndHandleUpdate(reg.waiting);
             }
 
-            // Listen for new service worker installation
+            // Listen for new service worker installation lifecycle
             reg.addEventListener("updatefound", () => {
               const newWorker = reg.installing;
               if (newWorker) {
                 newWorker.addEventListener("statechange", () => {
                   if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                    console.log("[PWA] New update is installed & waiting. Showing in-app banner...");
-                    this.waitingWorker = newWorker;
-                    this.showUpdateBanner();
+                    this.checkAndHandleUpdate(newWorker);
                   }
                 });
               }
@@ -325,12 +367,25 @@ class EmojiAlchemistGame {
 
     window.addEventListener("appinstalled", () => {
       console.log("[PWA] Application installed on home screen!");
+      document.body.classList.add("app-standalone");
       if (this.engagementBannerEl) this.engagementBannerEl.classList.add("hidden");
       this.deferredPrompt = null;
       this.deferredInstallPrompt = null;
       this.closeInstallModal();
       this.showSimpleToast("🎉", "App Installed", "Emoji Alchemist is now installed and ready to play 100% offline!");
     });
+
+    try {
+      const standaloneMediaQuery = window.matchMedia('(display-mode: standalone)');
+      standaloneMediaQuery.addEventListener("change", (e) => {
+        if (e.matches) {
+          document.body.classList.add("app-standalone");
+          if (this.engagementBannerEl) this.engagementBannerEl.classList.add("hidden");
+        }
+      });
+    } catch (err) {
+      // Older engine compatibility
+    }
   }
 
   /**
@@ -342,19 +397,55 @@ class EmojiAlchemistGame {
         const reg = registration || this.swRegistration || (await navigator.serviceWorker.ready);
         if ("periodicSync" in reg) {
           const tags = await reg.periodicSync.getTags();
-          if (!tags.includes("check-game-updates")) {
-            await reg.periodicSync.register("check-game-updates", {
+          if (!tags.includes("check-update")) {
+            await reg.periodicSync.register("check-update", {
               minInterval: 24 * 60 * 60 * 1000, // 24 hours
             });
+            console.log("[PWA] Periodic Background Sync registered for 'check-update' (24h interval)");
+          }
+          if (!tags.includes("check-game-updates")) {
+            await reg.periodicSync.register("check-game-updates", {
+              minInterval: 24 * 60 * 60 * 1000,
+            });
             console.log("[PWA] Periodic Background Sync registered for 'check-game-updates' (24h interval)");
-          } else {
-            console.log("[PWA] Periodic Background Sync already active for 'check-game-updates'");
           }
         }
       } catch (err) {
         console.log("[PWA] Periodic Background Sync registration info:", err.message || err);
       }
     }
+  }
+
+  /**
+   * Update Handler with 2-day Automatic Auto-Update Bypass or Online Notification Modal/Toast
+   */
+  checkAndHandleUpdate(newWorker) {
+    if (!newWorker) return;
+    this.waitingWorker = newWorker;
+
+    const TWO_DAYS_MS = 48 * 60 * 60 * 1000;
+    const lastOpen = this.previousAppOpen || 0;
+    const isReturningAfter2Days = lastOpen > 0 && (Date.now() - lastOpen > TWO_DAYS_MS);
+
+    // 3. Automatic Auto-Update Logic (2+ Days Offline or Background Return)
+    if (isReturningAfter2Days && navigator.onLine) {
+      console.log("[PWA] Auto-updating silently (user returned after 2+ days offline or inactive)...");
+      try {
+        newWorker.postMessage({ action: "skipWaiting" });
+        newWorker.postMessage({ type: "SKIP_WAITING" });
+      } catch (err) {
+        console.warn("[PWA] Auto skipWaiting error:", err);
+      }
+      return;
+    }
+
+    // 2. Default Online Flow: Show sleek, non-intrusive Update Modal / Toast
+    console.log("[PWA] New update is installed & waiting. Showing in-app update notification banner...");
+    const subtextEl = document.getElementById("update-subtext");
+    if (subtextEl) {
+      subtextEl.textContent = `Version ${APP_VERSION} is ready with performance improvements.`;
+    }
+    this.showUpdateBanner();
   }
 
   showUpdateBanner() {
@@ -372,8 +463,13 @@ class EmojiAlchemistGame {
 
   applyAppUpdate() {
     if (this.waitingWorker) {
-      console.log("[PWA] User triggered update, sending SKIP_WAITING to waiting worker...");
-      this.waitingWorker.postMessage({ type: "SKIP_WAITING" });
+      console.log("[PWA] User triggered Update Now, sending skipWaiting to worker...");
+      try {
+        this.waitingWorker.postMessage({ action: "skipWaiting" });
+        this.waitingWorker.postMessage({ type: "SKIP_WAITING" });
+      } catch (err) {
+        console.warn("[PWA] PostMessage skipWaiting error:", err);
+      }
     }
     this.hideUpdateBanner();
     setTimeout(() => {
@@ -394,20 +490,20 @@ class EmojiAlchemistGame {
         const reg = this.swRegistration || await navigator.serviceWorker.ready;
         await reg.update();
         if (this.waitingWorker || reg.waiting) {
-          this.waitingWorker = this.waitingWorker || reg.waiting;
-          this.showUpdateBanner();
-          this.showSimpleToast("🧪", "New Update Found!", "A new update is available. Tap 'Update Now' to apply.");
+          const worker = this.waitingWorker || reg.waiting;
+          this.checkAndHandleUpdate(worker);
+          this.showSimpleToast("🚀", "New Update Found!", `Version ${APP_VERSION} is ready. Tap 'Update Now' to apply.`);
         } else {
           setTimeout(() => {
-            this.showSimpleToast("✨", "Up to Date", "You are playing on the latest version! (v1.0.2)");
+            this.showSimpleToast("✨", "Up to Date", `You are playing on the latest version! (v${APP_VERSION})`);
           }, 450);
         }
       } catch (err) {
         console.warn("[PWA] Manual update check error:", err);
-        this.showSimpleToast("✨", "Up to Date", "You are playing on the latest version! (v1.0.2)");
+        this.showSimpleToast("✨", "Up to Date", `You are playing on the latest version! (v${APP_VERSION})`);
       }
     } else {
-      this.showSimpleToast("✨", "Up to Date", "You are playing on the latest version! (v1.0.2)");
+      this.showSimpleToast("✨", "Up to Date", `You are playing on the latest version! (v${APP_VERSION})`);
     }
   }
 
@@ -1812,7 +1908,7 @@ class EmojiAlchemistGame {
 
     // Initial base elements spawn on canvas
     setTimeout(() => {
-      if (this.canvasEl.children.length === 0) {
+      if (this.canvasEl && this.canvasEl.children.length === 0) {
         const canvasRect = this.canvasEl.getBoundingClientRect();
         const startY = Math.max(30, canvasRect.height / 2 - 40);
         const itemSize = window.innerWidth <= 768 ? 68 : 76;
@@ -2184,7 +2280,7 @@ class EmojiAlchemistGame {
 
     // Initial base elements spawn on canvas
     setTimeout(() => {
-      if (this.canvasEl.children.length === 0) {
+      if (this.canvasEl && this.canvasEl.children.length === 0) {
         const canvasRect = this.canvasEl.getBoundingClientRect();
         const startY = Math.max(30, canvasRect.height / 2 - 40);
         const itemSize = window.innerWidth <= 768 ? 68 : 76;

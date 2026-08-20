@@ -36,7 +36,7 @@
 
     <div id="app-root">
       <!-- Optional Psychological Engagement Banner (Offline Ready + Speed Grind Challenge) -->
-      <div id="pwa-engagement-banner" class="engagement-banner" role="banner">
+      <div id="install-banner" class="engagement-banner install-banner" role="banner">
         <div class="banner-content">
           <span class="banner-badge">⚡ 100% Offline Ready</span>
           <p class="banner-text">
@@ -44,7 +44,7 @@
           </p>
         </div>
         <div class="banner-actions">
-          <button id="btn-install-pwa" class="btn btn-banner-action" title="Install or Add to Home Screen">
+          <button id="btn-install-pwa" class="btn btn-banner-action install-btn" title="Install or Add to Home Screen">
             <span>📲</span>
             <span class="btn-text">Install App</span>
           </button>
@@ -196,16 +196,19 @@
       </main>
     </div>
 
-    <!-- In-App Floating PWA Update Toast Banner -->
+    <!-- In-App Floating PWA Update Toast Banner / Modal -->
     <div id="pwa-update-banner" class="pwa-update-banner" role="alert" aria-live="assertive" style="display: none;">
       <div class="update-banner-inner">
         <div class="update-banner-info">
-          <span class="update-icon">🧪</span>
-          <span class="update-text">New update available!</span>
+          <span class="update-icon">🚀</span>
+          <div class="update-text-group">
+            <span class="update-heading">🚀 New Update Available!</span>
+            <span class="update-subtext" id="update-subtext">Version 1.0.3 is ready with performance improvements.</span>
+          </div>
         </div>
         <div class="update-banner-actions">
           <button type="button" id="btn-update-now" class="btn btn-update-now" title="Apply update and refresh">
-            <span>Update Now</span>
+            <span>⚡ Update Now</span>
           </button>
           <button type="button" id="btn-dismiss-update" class="btn-icon-dismiss" title="Dismiss" aria-label="Dismiss">✕</button>
         </div>
@@ -233,7 +236,7 @@
                 <span class="settings-label-desc">Service Worker Cache & System Version</span>
               </div>
               <div class="settings-version-group">
-                <span class="version-tag" id="app-version-tag">v1.0.2</span>
+                <span class="version-tag" id="app-version-label">v1.0.3</span>
                 <button type="button" id="btn-check-updates-settings" class="btn btn-check-updates" title="Check for element updates">
                   <span>🔄 Check for Updates</span>
                 </button>
