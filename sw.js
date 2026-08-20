@@ -1,4 +1,4 @@
-const CACHE_NAME = 'emoji-alchemist-v1.0.3';
+const CACHE_NAME = 'emoji-alchemist-v1.0.0';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

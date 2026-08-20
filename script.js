@@ -13,7 +13,7 @@
  */
 
 // Centralized Application Version
-const APP_VERSION = "1.0.3";
+const APP_VERSION = "1.0.0";
 
 // Initial standalone WebAPK / PWA check on immediate script evaluation
 if (typeof window !== "undefined") {
@@ -245,6 +245,7 @@ class EmojiAlchemistGame {
     this.renderFeedbackHistory();
     this.setupEventListeners();
     this.setupAntiFrustrationGuards();
+    this.setupDeviceViewControls();
   }
 
   /**
@@ -266,10 +267,9 @@ class EmojiAlchemistGame {
   }
 
   /**
-   * Randomized Dynamic Splash Screen (1200ms - 2400ms load, 0.5s smooth fade-out)
+   * Fast & Responsive In-App Splash Screen (350ms smooth transition)
    */
   initSplashScreen() {
-    const randomLoadTime = Math.floor(Math.random() * (2400 - 1200 + 1)) + 1200;
     setTimeout(() => {
       const splash = document.getElementById("splash-screen");
       if (splash) {
@@ -280,9 +280,9 @@ class EmojiAlchemistGame {
           } else {
             splash.style.display = "none";
           }
-        }, 500);
+        }, 400);
       }
-    }, randomLoadTime);
+    }, 350);
   }
 
   /**
@@ -2293,6 +2293,64 @@ class EmojiAlchemistGame {
         });
       }
     }, 150);
+  }
+
+  /**
+   * Presentation Shell Device Controls & Status Bar Clock
+   */
+  setupDeviceViewControls() {
+    const btnPhone = document.getElementById("btn-view-phone");
+    const btnDesktop = document.getElementById("btn-view-desktop");
+    const container = document.getElementById("device-view-container");
+    const clockEl = document.getElementById("status-clock");
+
+    // 1. Live status bar clock
+    const updateClock = () => {
+      if (clockEl) {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, "0");
+        const minutes = now.getMinutes().toString().padStart(2, "0");
+        clockEl.textContent = `${hours}:${minutes}`;
+      }
+    };
+    updateClock();
+    setInterval(updateClock, 10000);
+
+    // 2. View mode switcher
+    if (btnPhone && btnDesktop && container) {
+      const savedMode = localStorage.getItem("emoji_alchemist_view_mode") || "phone";
+      if (savedMode === "desktop") {
+        container.classList.remove("device-view-mode-phone");
+        container.classList.add("device-view-mode-desktop");
+        btnDesktop.classList.add("active");
+        btnPhone.classList.remove("active");
+      } else {
+        container.classList.add("device-view-mode-phone");
+        container.classList.remove("device-view-mode-desktop");
+        btnPhone.classList.add("active");
+        btnDesktop.classList.remove("active");
+      }
+
+      btnPhone.addEventListener("click", () => {
+        container.classList.add("device-view-mode-phone");
+        container.classList.remove("device-view-mode-desktop");
+        btnPhone.classList.add("active");
+        btnDesktop.classList.remove("active");
+        localStorage.setItem("emoji_alchemist_view_mode", "phone");
+        this.playSound("pop");
+        window.dispatchEvent(new Event("resize"));
+      });
+
+      btnDesktop.addEventListener("click", () => {
+        container.classList.remove("device-view-mode-phone");
+        container.classList.add("device-view-mode-desktop");
+        btnDesktop.classList.add("active");
+        btnPhone.classList.remove("active");
+        localStorage.setItem("emoji_alchemist_view_mode", "desktop");
+        this.playSound("pop");
+        window.dispatchEvent(new Event("resize"));
+      });
+    }
   }
 }
 

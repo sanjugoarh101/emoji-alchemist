@@ -3,11 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Emoji Alchemist - PWA Crafting Game</title>
-    <meta name="description" content="Drag, drop, and combine emoji elements to discover 68+ alchemical creations offline." />
+    <!-- Primary Meta Tags -->
+    <title>Emoji Alchemist — Combine & Discover Elements</title>
+    <meta name="title" content="Emoji Alchemist — Combine & Discover Elements" />
+    <meta name="description" content="A fast, offline-ready potion-crafting PWA game. Combine base elements to unlock hundreds of unique emojis!" />
+
+    <!-- Open Graph / Facebook / WhatsApp / Discord -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://emoji-alchemist.pages.dev/" />
+    <meta property="og:title" content="Emoji Alchemist" />
+    <meta property="og:description" content="Combine elements, unlock new emojis, and play 100% offline!" />
+    <meta property="og:image" content="https://emoji-alchemist.pages.dev/icon-512.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Emoji Alchemist" />
+    <meta property="twitter:description" content="Combine elements, unlock new emojis, and play 100% offline!" />
+    <meta property="twitter:image" content="https://emoji-alchemist.pages.dev/icon-512.png" />
     
     <!-- PWA & Mobile Web App Meta Tags -->
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="manifest.json" />
     <link rel="icon" type="image/png" href="icon-192.png" />
     <meta name="theme-color" content="#0B0F19" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -16,25 +31,59 @@
     <meta name="apple-mobile-web-app-title" content="Emoji Alchemist" />
     <link rel="apple-touch-icon" href="icon-192.png" />
 
-    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- High-End In-App Splash Screen -->
-    <div id="splash-screen" class="splash-screen" role="dialog" aria-hidden="false" aria-label="Loading Emoji Alchemist">
-      <div class="splash-content">
-        <div class="splash-orb-wrapper">
-          <div class="splash-orb-aura"></div>
-          <div class="splash-orb-icon">🔮</div>
+    <!-- App Presentation Shell Container -->
+    <div id="device-view-container" class="device-view-mode-phone">
+      <!-- Desktop Mode Switcher Bar -->
+      <div id="device-mode-bar" class="device-mode-bar">
+        <div class="device-mode-brand">
+          <span class="brand-sparkle">🔮</span>
+          <span class="brand-name">Emoji Alchemist</span>
+          <span class="brand-badge">PWA</span>
         </div>
-        <h1 class="splash-title">Emoji Alchemist</h1>
-        <p class="splash-subtitle">✨ Transmute & Discover</p>
-        <div class="splash-loader-bar">
-          <div class="splash-loader-fill"></div>
+        <div class="device-mode-toggles">
+          <button type="button" id="btn-view-phone" class="device-toggle-btn active" title="Switch to Mobile App View">
+            <span>📱 Mobile App</span>
+          </button>
+          <button type="button" id="btn-view-desktop" class="device-toggle-btn" title="Switch to Fullscreen Workbench">
+            <span>🖥️ Fullscreen Lab</span>
+          </button>
         </div>
       </div>
-    </div>
 
-    <div id="app-root">
+      <!-- Device Frame (Phone Mockup Frame on Desktop) -->
+      <div id="device-frame" class="device-frame">
+        <!-- Phone Status Bar -->
+        <div class="phone-status-bar" id="phone-status-bar" aria-hidden="true">
+          <span class="status-time" id="status-clock">9:41</span>
+          <div class="phone-island">
+            <div class="island-camera"></div>
+          </div>
+          <div class="status-icons">
+            <span class="status-signal">5G</span>
+            <span class="status-wifi">📶</span>
+            <span class="status-battery">100% 🔋</span>
+          </div>
+        </div>
+
+        <!-- High-End In-App Splash Screen -->
+        <div id="splash-screen" class="splash-screen" role="dialog" aria-hidden="false" aria-label="Loading Emoji Alchemist">
+          <div class="splash-content">
+            <div class="splash-orb-wrapper">
+              <div class="splash-orb-aura"></div>
+              <div class="splash-orb-icon">🔮</div>
+            </div>
+            <h1 class="splash-title">Emoji Alchemist</h1>
+            <p class="splash-subtitle">✨ Transmute & Discover</p>
+            <div class="splash-loader-bar">
+              <div class="splash-loader-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="app-root">
       <!-- Optional Psychological Engagement Banner (Offline Ready + Speed Grind Challenge) -->
       <div id="install-banner" class="engagement-banner install-banner" role="banner">
         <div class="banner-content">
@@ -203,7 +252,7 @@
           <span class="update-icon">🚀</span>
           <div class="update-text-group">
             <span class="update-heading">🚀 New Update Available!</span>
-            <span class="update-subtext" id="update-subtext">Version 1.0.3 is ready with performance improvements.</span>
+            <span class="update-subtext" id="update-subtext">Version 1.0.0 is ready with performance improvements.</span>
           </div>
         </div>
         <div class="update-banner-actions">
@@ -236,7 +285,7 @@
                 <span class="settings-label-desc">Service Worker Cache & System Version</span>
               </div>
               <div class="settings-version-group">
-                <span class="version-tag" id="app-version-label">v1.0.3</span>
+                <span class="version-tag" id="app-version-label">v1.0.0</span>
                 <button type="button" id="btn-check-updates-settings" class="btn btn-check-updates" title="Check for element updates">
                   <span>🔄 Check for Updates</span>
                 </button>
@@ -282,6 +331,10 @@
               <button type="button" id="btn-settings-reset" class="btn btn-danger-hover">
                 <span>🗑️ Reset All</span>
               </button>
+            </div>
+
+            <div class="settings-footer">
+              <p class="settings-footer-text">Crafted with 🔮 by Elitemindlab</p>
             </div>
           </div>
         </div>
@@ -486,6 +539,13 @@
         </div>
       </div>
     </div>
+
+        <!-- Phone Bottom Home Bar Indicator -->
+        <div class="phone-home-indicator" aria-hidden="true">
+          <div class="phone-home-bar"></div>
+        </div>
+      </div> <!-- /#device-frame -->
+    </div> <!-- /#device-view-container -->
 
     <!-- Core Game Engine -->
     <script type="module" src="/script.js"></script>
