@@ -1,12 +1,9 @@
 {
   "name": "Emoji Alchemist",
   "short_name": "Alchemist",
-  "description": "Drag, drop, and combine emoji elements to discover alchemical creations offline.",
-  "start_url": "/",
-  "scope": "/",
-  "id": "/",
+  "description": "Combine elements and discover emojis offline.",
+  "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "any",
   "background_color": "#0B0F19",
   "theme_color": "#0B0F19",
   "icons": [
@@ -14,25 +11,13 @@
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }

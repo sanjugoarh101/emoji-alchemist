@@ -301,7 +301,7 @@ class EmojiAlchemistGame {
       });
 
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js")
+        navigator.serviceWorker.register("./sw.js")
           .then((reg) => {
             this.swRegistration = reg;
             console.log("[PWA] Service Worker registered successfully:", reg.scope);
