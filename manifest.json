@@ -1,23 +1,23 @@
 {
   "name": "Emoji Alchemist",
   "short_name": "Alchemist",
-  "description": "Combine elements and discover emojis offline.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0B0F19",
   "theme_color": "#0B0F19",
+  "description": "Combine elements and discover emojis offline.",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "image_4.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "image_4.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }
