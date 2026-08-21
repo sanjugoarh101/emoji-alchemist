@@ -6,8 +6,7 @@ const ASSETS_TO_CACHE = [
   '/script.js',
   '/combinations.json',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/icon.png'
 ];
 
 // Install Event - Pre-cache core assets

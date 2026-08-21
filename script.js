@@ -2299,3 +2299,22 @@ class EmojiAlchemistGame {
 window.addEventListener("DOMContentLoaded", () => {
   window.emojiGame = new EmojiAlchemistGame();
 });
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show your custom "Install App" button now
+  const installBtn = document.getElementById('install-btn');
+  if (installBtn) {
+    installBtn.style.display = 'block';
+  }
+});
+
+window.triggerInstall = function() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+  }
+};
+

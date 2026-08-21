@@ -8,13 +8,13 @@
   "description": "Combine elements and discover emojis offline.",
   "icons": [
     {
-      "src": "image_4.png",
+      "src": "icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "image_4.png",
+      "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
