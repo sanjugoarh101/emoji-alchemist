@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0B0F19" />
+  <g transform="translate(128, 96)">
+    <!-- Liquid -->
+    <path d="M 54 230 L 202 230 C 210 260 192 274 192 274 L 64 274 C 64 274 46 260 54 230 Z" fill="#9f7aea"/>
+    <path d="M 69 200 L 187 200 L 202 230 L 54 230 Z" fill="#b794f4" opacity="0.8"/>
+    <!-- Flask Outline -->
+    <path d="M 108 50 L 148 50 L 148 130 L 218 240 A 30 30 0 0 1 192 290 L 64 290 A 30 30 0 0 1 38 240 L 108 130 Z" fill="none" stroke="#e2e8f0" stroke-width="16" stroke-linejoin="round"/>
+    <!-- Cork -->
+    <rect x="112" y="20" width="32" height="30" fill="#b7791f" rx="4"/>
+    <!-- Magic Bubbles -->
+    <circle cx="128" cy="170" r="10" fill="#d6bcfa"/>
+    <circle cx="160" cy="190" r="6" fill="#d6bcfa"/>
+    <circle cx="96" cy="180" r="5" fill="#d6bcfa"/>
+  </g>
+</svg>

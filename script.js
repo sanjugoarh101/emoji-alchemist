@@ -222,12 +222,21 @@ class EmojiAlchemistGame {
       document.body.classList.add('app-standalone');
     }
 
-    // Push baseline history state on initial app load for robust back-button interception
-    try {
-      history.pushState({ page: "main" }, "");
-    } catch (e) {
-      console.warn("History API initialization:", e);
-    }
+    // Delay history baseline state push to the first direct user interaction
+    // to avoid "Session History Item Has Been Marked Skippable" warning.
+    const initHistory = () => {
+      try {
+        if (!history.state || history.state.page !== "main") {
+          history.replaceState({ page: "main" }, "");
+        }
+      } catch (e) {
+        console.warn("History API initialization:", e);
+      }
+      window.removeEventListener("pointerdown", initHistory);
+      window.removeEventListener("keydown", initHistory);
+    };
+    window.addEventListener("pointerdown", initHistory, { once: true });
+    window.addEventListener("keydown", initHistory, { once: true });
 
     // Record and check app open timestamps for auto-update logic (2+ days offline / inactive return)
     this.previousAppOpen = parseInt(localStorage.getItem("lastAppOpen") || "0", 10);
