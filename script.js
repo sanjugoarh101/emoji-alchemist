@@ -1596,7 +1596,7 @@ class EmojiAlchemistGame {
    */
   openExitModal(fromPopState = false) {
     if (this.exitModalEl) {
-      this.exitModalEl.classList.add("open");
+      this.exitModalEl.classList.add("active");
       this.playSound("pop");
     }
     if (!fromPopState) {
@@ -1609,7 +1609,10 @@ class EmojiAlchemistGame {
   }
 
   closeExitModal(fromPopState = false) {
-    if (this.exitModalEl) this.exitModalEl.classList.remove("open");
+    if (this.exitModalEl) {
+      this.exitModalEl.classList.remove("active");
+      this.exitModalEl.classList.remove("open"); // Clean up old class just in case
+    }
     if (!fromPopState && history.state?.modal === "exit") {
       try {
         history.back();
