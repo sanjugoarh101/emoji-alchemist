@@ -245,7 +245,6 @@ class EmojiAlchemistGame {
     this.renderFeedbackHistory();
     this.setupEventListeners();
     this.setupAntiFrustrationGuards();
-    this.setupDeviceViewControls();
   }
 
   /**
@@ -267,9 +266,10 @@ class EmojiAlchemistGame {
   }
 
   /**
-   * Fast & Responsive In-App Splash Screen (350ms smooth transition)
+   * Randomized Dynamic Splash Screen (1200ms - 2400ms load, 0.5s smooth fade-out)
    */
   initSplashScreen() {
+    const randomLoadTime = Math.floor(Math.random() * (2400 - 1200 + 1)) + 1200;
     setTimeout(() => {
       const splash = document.getElementById("splash-screen");
       if (splash) {
@@ -280,9 +280,9 @@ class EmojiAlchemistGame {
           } else {
             splash.style.display = "none";
           }
-        }, 400);
+        }, 500);
       }
-    }, 350);
+    }, randomLoadTime);
   }
 
   /**
@@ -1596,7 +1596,7 @@ class EmojiAlchemistGame {
    */
   openExitModal(fromPopState = false) {
     if (this.exitModalEl) {
-      this.exitModalEl.classList.add("active");
+      this.exitModalEl.classList.add("open");
       this.playSound("pop");
     }
     if (!fromPopState) {
@@ -1609,10 +1609,7 @@ class EmojiAlchemistGame {
   }
 
   closeExitModal(fromPopState = false) {
-    if (this.exitModalEl) {
-      this.exitModalEl.classList.remove("active");
-      this.exitModalEl.classList.remove("open"); // Clean up old class just in case
-    }
+    if (this.exitModalEl) this.exitModalEl.classList.remove("open");
     if (!fromPopState && history.state?.modal === "exit") {
       try {
         history.back();
@@ -2296,64 +2293,6 @@ class EmojiAlchemistGame {
         });
       }
     }, 150);
-  }
-
-  /**
-   * Presentation Shell Device Controls & Status Bar Clock
-   */
-  setupDeviceViewControls() {
-    const btnPhone = document.getElementById("btn-view-phone");
-    const btnDesktop = document.getElementById("btn-view-desktop");
-    const container = document.getElementById("device-view-container");
-    const clockEl = document.getElementById("status-clock");
-
-    // 1. Live status bar clock
-    const updateClock = () => {
-      if (clockEl) {
-        const now = new Date();
-        const hours = now.getHours().toString().padStart(2, "0");
-        const minutes = now.getMinutes().toString().padStart(2, "0");
-        clockEl.textContent = `${hours}:${minutes}`;
-      }
-    };
-    updateClock();
-    setInterval(updateClock, 10000);
-
-    // 2. View mode switcher
-    if (btnPhone && btnDesktop && container) {
-      const savedMode = localStorage.getItem("emoji_alchemist_view_mode") || "phone";
-      if (savedMode === "desktop") {
-        container.classList.remove("device-view-mode-phone");
-        container.classList.add("device-view-mode-desktop");
-        btnDesktop.classList.add("active");
-        btnPhone.classList.remove("active");
-      } else {
-        container.classList.add("device-view-mode-phone");
-        container.classList.remove("device-view-mode-desktop");
-        btnPhone.classList.add("active");
-        btnDesktop.classList.remove("active");
-      }
-
-      btnPhone.addEventListener("click", () => {
-        container.classList.add("device-view-mode-phone");
-        container.classList.remove("device-view-mode-desktop");
-        btnPhone.classList.add("active");
-        btnDesktop.classList.remove("active");
-        localStorage.setItem("emoji_alchemist_view_mode", "phone");
-        this.playSound("pop");
-        window.dispatchEvent(new Event("resize"));
-      });
-
-      btnDesktop.addEventListener("click", () => {
-        container.classList.remove("device-view-mode-phone");
-        container.classList.add("device-view-mode-desktop");
-        btnDesktop.classList.add("active");
-        btnPhone.classList.remove("active");
-        localStorage.setItem("emoji_alchemist_view_mode", "desktop");
-        this.playSound("pop");
-        window.dispatchEvent(new Event("resize"));
-      });
-    }
   }
 }
 
