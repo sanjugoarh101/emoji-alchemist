@@ -39,9 +39,11 @@
       <div id="install-banner" class="engagement-banner install-banner" role="banner">
         <div class="banner-content">
           <span class="banner-badge">⚡ 100% Offline Ready</span>
-          <p class="banner-text">
-            <strong>Grind your brain:</strong> Play offline & conquer all discoveries before the next version update!
-          </p>
+          <div class="banner-text ticker-wrapper">
+            <span class="ticker-text">
+              <strong>Grind your brain:</strong> Play offline & conquer all discoveries before the next version update!
+            </span>
+          </div>
         </div>
         <div class="banner-actions">
           <button id="btn-install-pwa" class="btn btn-banner-action install-btn" title="Install or Add to Home Screen">
@@ -65,7 +67,6 @@
         </div>
 
         <div class="header-actions">
-          <button id="install-btn" style="display:none;" onclick="triggerInstall()">📥 Install Emoji Alchemist</button>
           
           <!-- Tier Milestone Pill -->
           <button id="btn-milestones" class="stats-badge tier-pill" title="View Mastery Tier Milestones">
